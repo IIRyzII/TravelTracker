@@ -1,0 +1,10 @@
+traveltracker.db
+Visited_Places.DB
+__pycache__/
+*.pyc
+
+config.json
+*.bak
+node_modules/
+
+README.md/

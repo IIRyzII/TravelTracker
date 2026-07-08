@@ -1,0 +1,252 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>ORBIT — your world, tracked</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><circle cx='50' cy='50' r='42' fill='%233987e5'/><ellipse cx='50' cy='50' rx='42' ry='16' fill='none' stroke='%230d0d0d' stroke-width='6'/></svg>">
+<link rel="stylesheet" href="/static/css/app.css">
+</head>
+<body>
+
+<header class="topbar">
+  <div class="brand">
+    <span class="brand-mark" aria-hidden="true"></span>
+    <span class="brand-name">ORBIT</span>
+    <span class="brand-tag">your world, tracked</span>
+  </div>
+  <nav class="tabs" role="tablist">
+    <button class="tab active" data-view="globe">Globe</button>
+    <button class="tab" data-view="logbook">Logbook</button>
+    <button class="tab" data-view="wishlist">Wishlist</button>
+    <button class="tab" data-view="planner">Trip planner</button>
+    <button class="tab" data-view="trips">My trips</button>
+    <button class="tab" data-view="friends">Friends</button>
+  </nav>
+  <button class="profile-chip" id="profileChip" title="Your share code — click to copy">
+    <span class="avatar" id="avatarLetter">?</span>
+    <span class="profile-meta">
+      <span class="profile-name" id="profileName">…</span>
+      <span class="profile-code" id="profileCode"></span>
+    </span>
+  </button>
+</header>
+
+<!-- ═══ GLOBE (home) ═══ -->
+<main id="view-globe" class="view active">
+  <div id="globe"></div>
+
+  <aside class="stats-rail" aria-label="Your travel stats">
+    <div class="stat-tile">
+      <span class="stat-label">Countries visited</span>
+      <span class="stat-value" id="statVisited">0</span>
+      <div class="meter" title="Share of the world's countries">
+        <div class="meter-fill" id="meterVisited"></div>
+      </div>
+      <span class="stat-sub" id="statVisitedSub">of 177 countries</span>
+    </div>
+    <div class="stat-tile">
+      <span class="stat-label">World explored</span>
+      <span class="stat-value" id="statPercent">0%</span>
+    </div>
+    <div class="stat-tile">
+      <span class="stat-label">Continents</span>
+      <span class="stat-value" id="statContinents">0<span class="stat-of"> / 6</span></span>
+    </div>
+    <div class="stat-tile">
+      <span class="stat-label">Dream list</span>
+      <span class="stat-value" id="statWishlist">0</span>
+    </div>
+  </aside>
+
+  <div class="globe-search">
+    <input id="countrySearch" type="text" placeholder="Fly to a country…" autocomplete="off" aria-label="Search countries">
+    <ul id="searchResults" class="search-results" hidden></ul>
+  </div>
+
+  <div class="compare-banner" id="compareBanner" hidden>
+    <span>Comparing with <strong id="compareName"></strong></span>
+    <span class="legend-chip"><i class="dot dot-you"></i>Only you <b id="cmpYou">0</b></span>
+    <span class="legend-chip"><i class="dot dot-both"></i>Both <b id="cmpBoth">0</b></span>
+    <span class="legend-chip"><i class="dot dot-friend"></i>Only them <b id="cmpThem">0</b></span>
+    <button class="btn btn-ghost btn-sm" id="exitCompare">Exit compare</button>
+  </div>
+
+  <div class="globe-legend" id="globeLegend">
+    <span class="legend-chip"><i class="dot dot-you"></i>Visited</span>
+    <span class="legend-chip"><i class="dot dot-wish"></i>Wishlist</span>
+    <span class="legend-hint">Click a continent, zoom for countries &amp; cities</span>
+  </div>
+
+  <div class="lod-pill" id="lodPill" role="group" aria-label="Detail level">
+    <button data-mode="continent" class="active">Continents</button>
+    <button data-mode="country">Countries</button>
+    <button data-mode="city">Cities</button>
+    <button data-mode="town">Towns</button>
+  </div>
+
+  <div class="country-pop" id="countryPop" hidden>
+    <div class="pop-head">
+      <span class="pop-flag" id="popFlag"></span>
+      <div>
+        <div class="pop-name" id="popName"></div>
+        <div class="pop-meta" id="popMeta"></div>
+      </div>
+      <button class="pop-close" id="popClose" aria-label="Close">×</button>
+    </div>
+    <div class="pop-actions" id="popActions"></div>
+  </div>
+</main>
+
+<!-- ═══ LOGBOOK ═══ -->
+<main id="view-logbook" class="view">
+  <div class="panel">
+    <h1>Travel log</h1>
+    <p class="lede">Everywhere you've set foot — by continent, country, city and town. Click anything to fly there.</p>
+    <div class="log-summary" id="logSummary"></div>
+    <div id="logSections"></div>
+    <p class="empty" id="logEmpty">Nothing logged yet — click a country or town on the globe and hit "Been there".</p>
+  </div>
+</main>
+
+<!-- ═══ WISHLIST ═══ -->
+<main id="view-wishlist" class="view">
+  <div class="panel">
+    <h1>Dream list</h1>
+    <p class="lede">Places you're going to get to. Add a city, an island, a whole country — then let the planner build you a shortlist.</p>
+    <form class="add-row" id="wishForm">
+      <input id="wishInput" type="text" placeholder="e.g. Crete, Greece" maxlength="80" autocomplete="off">
+      <button class="btn btn-primary" type="submit">Add to wishlist</button>
+    </form>
+    <ul class="wish-list" id="wishList"></ul>
+    <p class="empty" id="wishEmpty">Nothing here yet — where do you dream of going?</p>
+  </div>
+</main>
+
+<!-- ═══ FRIENDS ═══ -->
+<main id="view-friends" class="view">
+  <div class="panel">
+    <h1>Friends</h1>
+    <p class="lede">Swap codes, overlay maps, argue about who's really travelled more.</p>
+
+    <div class="share-card">
+      <div>
+        <span class="stat-label">Your share code</span>
+        <div class="share-code" id="bigShareCode">——————</div>
+      </div>
+      <span class="row-actions">
+        <button class="btn btn-primary" id="copyCode">Copy code</button>
+        <button class="btn btn-ghost" id="switchProfile" title="Log in as a different traveller">Switch traveller</button>
+      </span>
+    </div>
+
+    <form class="add-row" id="friendForm">
+      <input id="friendInput" type="text" placeholder="Enter a friend's code, e.g. K7MRQ2" maxlength="6" autocomplete="off" style="text-transform:uppercase">
+      <button class="btn btn-primary" type="submit">Add friend</button>
+    </form>
+
+    <ul class="friend-list" id="friendList"></ul>
+    <p class="empty" id="friendEmpty">No friends yet — send someone your code.</p>
+  </div>
+</main>
+
+<!-- ═══ PLANNER ═══ -->
+<main id="view-planner" class="view">
+  <div class="panel">
+    <h1>Trip planner</h1>
+    <p class="lede">Pick a dream destination and get a shortlist of the sights, activities, food and nights out that matter.</p>
+
+    <div class="plan-with" id="planWithNote" hidden>
+      <span id="planWithText"></span>
+      <button class="pop-close" id="planWithCancel" aria-label="Cancel planning together">×</button>
+    </div>
+    <form class="add-row" id="planForm">
+      <input id="planInput" type="text" placeholder="Where to? e.g. Crete, Greece" maxlength="80" autocomplete="off">
+      <select id="planRadius" class="radius-select" title="How far from the centre results can be">
+        <option value="5">within 5 km</option>
+        <option value="15" selected>within 15 km</option>
+        <option value="30">within 30 km</option>
+        <option value="50">within 50 km</option>
+        <option value="0">whole region</option>
+      </select>
+      <button class="btn btn-primary" type="submit">Build shortlist</button>
+    </form>
+    <div class="date-row">
+      <span class="date-label">Travelling</span>
+      <input type="date" id="planStart" aria-label="Arriving">
+      <span class="date-arrow">→</span>
+      <input type="date" id="planEnd" aria-label="Leaving">
+      <span class="date-note" id="dateNote"></span>
+    </div>
+
+    <div class="chip-row" id="wishChips"></div>
+    <div class="chip-row" id="destChips"></div>
+
+    <div id="itinerary" hidden>
+      <div class="itin-head">
+        <h2 id="itinTitle"></h2>
+        <span class="itin-badge" id="itinBadge"></span>
+      </div>
+      <p class="lede" id="itinTagline"></p>
+      <div class="save-bar" id="saveBar">
+        <span id="saveCount" class="save-count"></span>
+        <button class="btn btn-primary" id="saveTrip">Save as planned trip</button>
+      </div>
+      <div id="itinSections"></div>
+    </div>
+  </div>
+</main>
+
+<!-- ═══ MY TRIPS ═══ -->
+<main id="view-trips" class="view">
+  <div class="panel">
+    <div id="tripListWrap">
+      <h1>Planned trips</h1>
+      <p class="lede">Your saved shortlists — open one on the ground and tick things off as you go.</p>
+      <ul class="trip-list" id="tripList"></ul>
+      <p class="empty" id="tripEmpty">No trips planned yet — build a shortlist in the Trip planner and save it.</p>
+    </div>
+    <div id="tripDetail" hidden>
+      <button class="btn btn-ghost btn-sm" id="tripBack">← All trips</button>
+      <div class="itin-head">
+        <h2 id="tripTitle"></h2>
+        <span class="itin-badge" id="tripProgress"></span>
+      </div>
+      <p class="lede" id="tripTagline"></p>
+      <div class="meter trip-meter"><div class="meter-fill meter-fill-wish" id="tripMeter"></div></div>
+      <div class="crew-row" id="tripCrew"></div>
+      <div class="travel-card">
+        <div class="travel-line" id="travelSummary">Add your flight and dates — anything closed while you're there gets flagged.</div>
+        <form class="travel-form" id="travelForm">
+          <input id="tripFlight" type="text" placeholder="Flight, e.g. FR1234" maxlength="8" autocomplete="off">
+          <input id="tripStart" type="date" aria-label="Arriving">
+          <span class="date-arrow">→</span>
+          <input id="tripEnd" type="date" aria-label="Leaving">
+          <button class="btn btn-sm btn-primary" type="submit">Save details</button>
+        </form>
+      </div>
+      <div id="tripSections"></div>
+    </div>
+  </div>
+</main>
+
+<!-- ═══ ONBOARDING ═══ -->
+<div class="overlay" id="onboard" hidden>
+  <div class="onboard-card">
+    <span class="brand-mark big" aria-hidden="true"></span>
+    <h1>ORBIT</h1>
+    <p>Track every country you've set foot in, show it off on a globe,<br>compare with friends and plan the next one.</p>
+    <form id="onboardForm">
+      <input id="onboardName" type="text" placeholder="What should we call you?" maxlength="24" autocomplete="off">
+      <button class="btn btn-primary btn-lg" type="submit">Start exploring</button>
+    </form>
+    <p class="onboard-note">Already have a profile on this device's server? Enter the same name to pick it back up.</p>
+  </div>
+</div>
+
+<div class="toast" id="toast" hidden></div>
+
+<script src="/static/vendor/globe.gl.min.js"></script>
+<script src="/static/js/app.js"></script>
+</body>
+</html>
