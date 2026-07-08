@@ -1,11 +1,3 @@
-"""ORBIT - travel tracker.
-
-Flask backend: profiles, visited countries, wishlist, friends (share codes),
-and a trip-planner that serves curated activity shortlists.
-
-Run:  python app.py   ->  http://127.0.0.1:5000
-"""
-
 import json
 import os
 import re
