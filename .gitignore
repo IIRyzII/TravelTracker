@@ -7,4 +7,4 @@ config.json
 *.bak
 node_modules/
 
-README.md
+README.md/
