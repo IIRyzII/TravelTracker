@@ -6,6 +6,7 @@ and a trip-planner that serves curated activity shortlists.
 Run:  python app.py   ->  http://127.0.0.1:5000
 """
 
+import hashlib
 import json
 import os
 import re
@@ -92,6 +93,15 @@ CREATE TABLE IF NOT EXISTS trip_votes(
     user_id INTEGER NOT NULL REFERENCES users(id),
     PRIMARY KEY(item_id, user_id)
 );
+
+-- Indexes for the foreign-key lookups SQLite doesn't auto-index.
+-- (PRIMARY KEY / UNIQUE columns are already indexed, so composite-PK tables
+--  like visited, friends, trip_members(trip_id) get their leftmost column
+--  for free; these cover the remaining hot filters.)
+CREATE INDEX IF NOT EXISTS idx_wishlist_user     ON wishlist(user_id);
+CREATE INDEX IF NOT EXISTS idx_trips_user        ON trips(user_id);
+CREATE INDEX IF NOT EXISTS idx_trip_items_trip   ON trip_items(trip_id);
+CREATE INDEX IF NOT EXISTS idx_trip_members_user ON trip_members(user_id);
 """
 
 CONFIG_PATH = os.path.join(BASE_DIR, "config.json")
@@ -179,12 +189,27 @@ def find_country(text):
 
 # ------------------------------------------------------------------- users
 
+# A share code is a shareable handle, but we still don't want raw codes sitting
+# in the database file. We store only a SHA-256 hash; the plaintext is returned
+# to its owner once (at creation / regeneration) and cached in their browser.
+# The pepper just means a stolen DB can't be checked against a plain rainbow
+# table of 6-char codes. For a hobby app a source constant is fine; a real
+# deployment would load it from the environment.
+SHARE_PEPPER = os.environ.get("ORBIT_SHARE_PEPPER", "orbit-share-v1")
+
+
+def hash_code(code):
+    return hashlib.sha256((SHARE_PEPPER + (code or "").strip().upper()).encode()).hexdigest()
+
+
 def new_share_code(db):
+    """Return (plaintext, hash) for a code whose hash isn't already taken."""
     alphabet = "ABCDEFGHJKMNPQRSTUVWXYZ23456789"
     while True:
         code = "".join(secrets.choice(alphabet) for _ in range(6))
-        if not db.execute("SELECT 1 FROM users WHERE share_code=?", (code,)).fetchone():
-            return code
+        digest = hash_code(code)
+        if not db.execute("SELECT 1 FROM users WHERE share_code=?", (digest,)).fetchone():
+            return code, digest
 
 
 def import_legacy(db, user_id):
@@ -235,7 +260,7 @@ def user_payload(db, user):
     ]
     friends = []
     for r in db.execute(
-        "SELECT u.id, u.username, u.share_code FROM friends f "
+        "SELECT u.id, u.username FROM friends f "
         "JOIN users u ON u.id=f.friend_id WHERE f.user_id=? ORDER BY u.username",
         (user["id"],),
     ):
@@ -279,7 +304,9 @@ def user_payload(db, user):
     return {
         "id": user["id"],
         "username": user["username"],
-        "share_code": user["share_code"],
+        # share_code column now holds a hash; the plaintext is never served from
+        # here. It's returned once at creation/regeneration and cached client-side.
+        "share_code": None,
         "visited": visited,
         "visited_cities": visited_cities,
         "wishlist": wishlist,
@@ -309,15 +336,18 @@ def create_profile():
     if existing:
         return jsonify(user_payload(db, existing))
     first_user = db.execute("SELECT COUNT(*) c FROM users").fetchone()["c"] == 0
+    code, digest = new_share_code(db)
     cur = db.execute(
         "INSERT INTO users(username, share_code) VALUES(?,?)",
-        (username, new_share_code(db)),
+        (username, digest),
     )
     user = db.execute("SELECT * FROM users WHERE id=?", (cur.lastrowid,)).fetchone()
     if first_user:
         import_legacy(db, user["id"])
     db.commit()
-    return jsonify(user_payload(db, user))
+    payload = user_payload(db, user)
+    payload["share_code"] = code  # shown once, then cached in the owner's browser
+    return jsonify(payload)
 
 
 @app.get("/api/state")
@@ -454,7 +484,8 @@ def add_friend():
     if not user:
         return jsonify(error="Unknown profile."), 404
     code = ((request.get_json(force=True)).get("share_code") or "").strip().upper()
-    friend = db.execute("SELECT * FROM users WHERE share_code=?", (code,)).fetchone()
+    # look up by hash — the raw code the friend typed never has to match plaintext
+    friend = db.execute("SELECT * FROM users WHERE share_code=?", (hash_code(code),)).fetchone()
     if not friend:
         return jsonify(error="No traveller found with that code."), 404
     if friend["id"] == user["id"]:
@@ -463,6 +494,20 @@ def add_friend():
     db.execute("INSERT OR IGNORE INTO friends VALUES(?,?)", (friend["id"], user["id"]))
     db.commit()
     return jsonify(user_payload(db, user))
+
+
+@app.post("/api/share_code/regenerate")
+def regenerate_share_code():
+    db = get_db()
+    user = require_user(db)
+    if not user:
+        return jsonify(error="Unknown profile."), 404
+    code, digest = new_share_code(db)
+    db.execute("UPDATE users SET share_code=? WHERE id=?", (digest, user["id"]))
+    db.commit()
+    payload = user_payload(db, user)
+    payload["share_code"] = code  # returned once so the owner can see/copy it
+    return jsonify(payload)
 
 
 @app.delete("/api/friends/<int:friend_id>")
@@ -991,6 +1036,12 @@ def init_db():
     item_cols = {r[1] for r in db.execute("PRAGMA table_info(trip_items)")}
     if "open_days" not in item_cols:
         db.execute("ALTER TABLE trip_items ADD COLUMN open_days TEXT")
+    # migrate any legacy plaintext share codes to hashes in place (a hash is
+    # 64 hex chars, a raw code is 6 — so anything shorter still needs hashing)
+    for uid, code in db.execute(
+        "SELECT id, share_code FROM users WHERE length(share_code) < 64"
+    ).fetchall():
+        db.execute("UPDATE users SET share_code=? WHERE id=?", (hash_code(code), uid))
     db.commit()
     db.close()
 

@@ -1,0 +1,62 @@
+<!-- @dsCard group="Components" name="Cards" subtitle="Trip card with progress, itinerary item with rating" -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>ORBIT — Cards</title>
+<style>
+  :root{ --page:#0d0d0d; --surface:#1a1a19; --ink:#fff; --ink-2:#c3c2b7; --muted:#898781;
+         --hairline:rgba(255,255,255,.10); --hairline-strong:rgba(255,255,255,.16);
+         --wish:#c98500; --you:#3987e5; --radius:14px; --font:system-ui,-apple-system,"Segoe UI",sans-serif; }
+  *{ box-sizing:border-box; }
+  body{ margin:0; background:var(--page); color:var(--ink); font-family:var(--font); padding:32px; max-width:720px; }
+  h2{ font-size:12px; font-weight:700; letter-spacing:.08em; text-transform:uppercase; color:var(--muted); margin:0 0 10px; }
+  .trip{ display:flex; align-items:center; gap:14px; background:var(--surface);
+         border:1px solid var(--hairline); border-radius:var(--radius); padding:16px 18px; margin-bottom:26px; }
+  .trip-icon{ width:38px; height:38px; border-radius:12px; flex:none;
+              background:rgba(201,133,0,.16); border:1px solid rgba(201,133,0,.45);
+              display:grid; place-items:center; font-size:17px; }
+  .trip-meta{ flex:1; min-width:0; }
+  .dest{ display:block; font-weight:700; }
+  .tsub{ display:block; font-size:12.5px; color:var(--muted); }
+  .lmeter{ display:block; max-width:200px; margin-top:8px; height:6px; border-radius:3px;
+           background:rgba(201,133,0,.22); overflow:hidden; }
+  .lmeter > span{ display:block; height:100%; background:var(--wish); border-radius:3px; }
+  .open{ background:transparent; border:1px solid var(--hairline-strong); color:var(--ink-2);
+         border-radius:8px; padding:6px 12px; font-size:13px; font-weight:650; }
+
+  .item{ display:flex; align-items:flex-start; gap:12px; background:var(--surface);
+         border:1px solid var(--hairline); border-radius:12px; padding:12px 16px; }
+  .item input{ width:18px; height:18px; margin-top:2px; accent-color:var(--you); }
+  .item b{ display:block; font-size:14.5px; }
+  .rating{ font-size:12.5px; color:var(--muted); margin-top:2px; }
+  .rating .star{ color:#ffce7a; }
+  .desc{ font-size:13.5px; color:var(--ink-2); }
+  .maps{ align-self:center; font-size:12.5px; font-weight:650; text-decoration:none; color:#9cc4f2;
+         border:1px solid var(--hairline-strong); border-radius:99px; padding:5px 12px; white-space:nowrap; }
+</style>
+</head>
+<body>
+  <h2>Trip card</h2>
+  <div class="trip">
+    <span class="trip-icon">✈</span>
+    <span class="trip-meta">
+      <span class="dest">Crete, Greece</span>
+      <span class="tsub">7 of 11 done · Wed 8 Jul → Mon 13 Jul · Ryanair FR1234 · with Alex</span>
+      <span class="lmeter"><span style="width:64%"></span></span>
+    </span>
+    <button class="open">Open</button>
+  </div>
+
+  <h2>Itinerary item</h2>
+  <div class="item">
+    <input type="checkbox" checked>
+    <div style="flex:1">
+      <b>Fortezza of Rethymnon</b>
+      <div class="rating"><span class="star">★</span> 4.4 · 18,629 reviews</div>
+      <span class="desc">Leof. Emmanouil Kefalogianni 27, Rethymno 741 31, Greece</span>
+    </div>
+    <a class="maps" href="#">Maps ↗</a>
+  </div>
+</body>
+</html>

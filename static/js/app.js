@@ -11,7 +11,8 @@ const S = {
   hoverContinent: null,
   mode: "continent",   // continent | country | city | town (zoom level)
   cities: null,        // lazily-loaded GeoNames places
-  searchMarker: null,
+  searchMarker: null,  // highlighted place marker (search or click selection)
+  selectedCode: null,  // country whose popover is currently open
   destinations: [],
   plan: null,          // itinerary currently open in the planner
   lastPlan: null,      // {place, coords} — so the radius selector can re-run it
@@ -46,6 +47,7 @@ const C = {
   wish: "#c98500",
   friend: "#199e70",
   both: "#9085e9",
+  sel: "#ff5da2",       // selection highlight — a hue no status uses
 };
 const CAT_ORDER = ["Must-see", "Activity", "Food & drink", "Night out"];
 const CAT_DOT = { "Must-see": C.you, "Activity": C.friend, "Food & drink": C.wish, "Night out": C.both };
@@ -138,8 +140,16 @@ async function api(path, { method = "GET", body } = {}) {
 function setUser(payload) {
   S.user = payload;
   localStorage.setItem("orbit_user", payload.id);
+  // the server only sends the plaintext share code once (at creation /
+  // regeneration); cache it locally so we can keep showing it to its owner
+  if (payload.share_code) {
+    localStorage.setItem("orbit_share_" + payload.id, payload.share_code);
+  }
+  S.shareCode = localStorage.getItem("orbit_share_" + payload.id);
   renderAll();
 }
+
+function shareCodeDisplay() { return S.shareCode || null; }
 
 function visitedSet() { return new Set((S.user?.visited || []).map((v) => v.code)); }
 function wishSet() { return new Set((S.user?.wishlist || []).map((w) => w.code).filter(Boolean)); }
@@ -178,6 +188,58 @@ function centroid(feature) {
   let lng = lngs.reduce((a, b) => a + b, 0) / lngs.length;
   if (lng > 180) lng -= 360;
   return { lat, lng };
+}
+
+/* ── starfield (atmosphere behind the globe) ─────────── */
+
+function initStarfield() {
+  const canvas = document.getElementById("starfield");
+  if (!canvas) return;
+  const ctx = canvas.getContext("2d");
+  let stars = [];
+  const DPR = Math.min(window.devicePixelRatio || 1, 2);
+
+  function seed() {
+    canvas.width = window.innerWidth * DPR;
+    canvas.height = window.innerHeight * DPR;
+    const count = Math.round((window.innerWidth * window.innerHeight) / 9000);
+    stars = Array.from({ length: count }, () => {
+      const big = Math.random() < 0.12;
+      return {
+        x: Math.random() * canvas.width,
+        y: Math.random() * canvas.height,
+        r: (big ? 1.1 + Math.random() * 1.2 : 0.3 + Math.random() * 0.8) * DPR,
+        base: big ? 0.55 : 0.28,
+        amp: 0.18 + Math.random() * 0.35,
+        speed: 0.0006 + Math.random() * 0.0016,
+        phase: Math.random() * Math.PI * 2,
+        // faint blue/violet tint on a few, white otherwise
+        hue: Math.random() < 0.22 ? (Math.random() < 0.5 ? "180,205,255" : "210,190,255") : "255,255,255",
+        drift: (0.01 + Math.random() * 0.02) * DPR,
+      };
+    });
+  }
+
+  function frame(t) {
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    for (const s of stars) {
+      const a = Math.max(0, s.base + Math.sin(s.phase + t * s.speed) * s.amp);
+      s.y += s.drift;
+      if (s.y > canvas.height + 2) { s.y = -2; s.x = Math.random() * canvas.width; }
+      ctx.beginPath();
+      ctx.arc(s.x, s.y, s.r, 0, Math.PI * 2);
+      ctx.fillStyle = `rgba(${s.hue},${a.toFixed(3)})`;
+      if (s.r > DPR) { ctx.shadowBlur = 6 * DPR; ctx.shadowColor = `rgba(${s.hue},0.5)`; }
+      else ctx.shadowBlur = 0;
+      ctx.fill();
+    }
+    requestAnimationFrame(frame);
+  }
+
+  seed();
+  let rt;
+  window.addEventListener("resize", () => { clearTimeout(rt); rt = setTimeout(seed, 200); });
+  requestAnimationFrame(frame);
 }
 
 /* ── globe ───────────────────────────────────────────── */
@@ -227,12 +289,14 @@ function refreshGlobe() {
     .polygonAltitude((d) => {
       const close = S.mode === "city" || S.mode === "town"; // flat up close: no cliff edges
       if (contMode) return d.properties.CONTINENT === S.hoverContinent ? 0.022 : 0.008;
+      if (d.properties.ADM0_A3 === S.selectedCode) return close ? 0.03 : 0.05; // lift the picked one
       if (d === S.hover) return close ? 0.006 : 0.04;
       return countryStatus(d.properties.ADM0_A3) === "none"
         ? (close ? 0.002 : 0.006) : (close ? 0.004 : 0.015);
     })
     // hex only — the renderer ignores stroke alpha
     .polygonStrokeColor((d) => {
+      if (d.properties.ADM0_A3 === S.selectedCode) return C.sel; // bright selection outline
       if (contMode) {
         // match the cap colour so internal borders vanish at continent level
         return d.properties.CONTINENT === S.hoverContinent ? C.noneHover : C.none;
@@ -329,14 +393,53 @@ function flyTo(code) {
 
 /* ── level of detail: continents → countries → cities → towns ── */
 
+/* Spatial hash grid: bucket the 137k places into GRID_CELL° cells so a camera
+   move only has to look at the handful of cells in view, not scan every place.
+   Key is packed as latIdx * 1000 + lngIdx (lngIdx is 0–89, so no collisions). */
+const GRID_CELL = 4;
+const LNG_CELLS = Math.round(360 / GRID_CELL); // 90
+const latCell = (lat) => Math.floor((lat + 90) / GRID_CELL);
+const lngCell = (lng) => ((Math.floor((lng + 180) / GRID_CELL) % LNG_CELLS) + LNG_CELLS) % LNG_CELLS;
+
+function buildCityGrid() {
+  const grid = new Map();
+  for (const c of S.cities) {
+    const key = latCell(c.lat) * 1000 + lngCell(c.lng);
+    (grid.get(key) || grid.set(key, []).get(key)).push(c);
+  }
+  S.cityGrid = grid;
+}
+
+/* every place whose cell overlaps the view box (longitude wraps at the seam) */
+function cityCandidates(pov, radius, cosLat) {
+  if (!S.cityGrid) return S.cities;
+  const lngRadius = Math.min(radius / cosLat, 180);
+  const latLo = Math.max(0, latCell(pov.lat - radius));
+  const latHi = Math.min(LNG_CELLS, latCell(pov.lat + radius));
+  const lngC = lngCell(pov.lng);
+  const half = Math.min(Math.ceil(lngRadius / GRID_CELL), Math.floor(LNG_CELLS / 2));
+  const out = [];
+  for (let la = latLo; la <= latHi; la++) {
+    for (let d = -half; d <= half; d++) {
+      const lo = ((lngC + d) % LNG_CELLS + LNG_CELLS) % LNG_CELLS;
+      const bucket = S.cityGrid.get(la * 1000 + lo);
+      if (bucket) out.push(...bucket);
+    }
+  }
+  return out;
+}
+
 let citiesLoading = false;
 async function loadCities() {
   if (S.cities || citiesLoading) return;
   citiesLoading = true;
   try {
     const raw = await (await fetch("/static/data/cities.json")).json();
-    // pre-sorted by population, descending
-    S.cities = raw.map(([name, iso2, lat, lng, pop]) => ({ name, iso2, lat, lng, pop }));
+    // pre-sorted by population, descending. logPop is precomputed once here so
+    // the per-frame ranking doesn't call Math.log10 on every place every move.
+    S.cities = raw.map(([name, iso2, lat, lng, pop]) =>
+      ({ name, iso2, lat, lng, pop, logPop: Math.log10(pop + 1) }));
+    buildCityGrid();
     updateLOD();
   } catch {
     toast("Couldn't load the city layer");
@@ -370,12 +473,13 @@ function placeMarkers() {
   };
   // no population floor — rank by population discounted by distance from the
   // view centre, so key cities surface but edge-of-screen giants can't starve
-  // the local towns you're actually looking at
+  // the local towns you're actually looking at. The spatial grid means we only
+  // score the places whose cells are on screen, not all 137k.
   const cand = [];
-  for (const c of S.cities) {
+  for (const c of cityCandidates(pov, radius, cosLat)) {
     const d = dist(c.lat, c.lng, pov.lat, pov.lng);
     if (d > radius) continue;
-    cand.push([Math.log10(c.pop + 1) - 2.2 * (d / radius), c]);
+    cand.push([(c.logPop ?? Math.log10(c.pop + 1)) - 2.2 * (d / radius), c]);
   }
   cand.sort((a, b) => b[0] - a[0]);
   const out = [];
@@ -424,7 +528,23 @@ function updateLOD() {
 
 /* ── country popover ─────────────────────────────────── */
 
-function closePop() { $("countryPop").hidden = true; }
+function closePop() {
+  $("countryPop").hidden = true;
+  const hadSelection = S.selectedCode || S.searchMarker;
+  S.selectedCode = null;
+  S.searchMarker = null;
+  if (world && hadSelection) { refreshGlobe(); updateLOD(); }
+}
+
+/* highlight a clicked place with the selection colour so it's obvious which
+   town you picked (bigger, brighter dot than the ambient markers) */
+function focusPlace(place) {
+  const alt = Math.max(world.pointOfView().altitude, 0.05);
+  S.searchMarker = { ...place, type: "search", alt: 0.01,
+    size: alt * 0.95, dot: alt * 0.66, color: C.sel };
+  if (S.selectedCode) { S.selectedCode = null; refreshGlobe(); } // town supersedes country
+  updateLOD();
+}
 
 function openPop(code, x, y) {
   const c = S.byCode[code];
@@ -432,6 +552,10 @@ function openPop(code, x, y) {
   const pop = $("countryPop");
   const visited = visitedSet().has(code);
   const wishItem = (S.user?.wishlist || []).find((w) => w.code === code);
+  S.selectedCode = code;   // bright outline + lift on the globe
+  S.searchMarker = null;   // a country selection supersedes any town marker
+  refreshGlobe();
+  updateLOD();
 
   $("popFlag").textContent = flag(c.iso2);
   $("popName").textContent = c.name;
@@ -517,10 +641,15 @@ function renderStats() {
   $("statContinents").innerHTML = `${conts.size}<span class="stat-of"> / 7</span>`;
   $("statWishlist").textContent = (S.user?.wishlist || []).length;
 
+  const code = shareCodeDisplay();
   $("profileName").textContent = S.user?.username || "…";
-  $("profileCode").textContent = S.user?.share_code || "";
+  $("profileCode").textContent = code || "";
   $("avatarLetter").textContent = (S.user?.username || "?")[0].toUpperCase();
-  $("bigShareCode").textContent = S.user?.share_code || "——————";
+  $("bigShareCode").textContent = code || "not on this device";
+  // no cached code (new device / migrated account) → offer to make a fresh one
+  const copyBtn = $("copyCode"), regenBtn = $("regenCode");
+  if (copyBtn) copyBtn.hidden = !code;
+  if (regenBtn) regenBtn.hidden = !!code;
 }
 
 /* ── logbook view ────────────────────────────────────── */
@@ -750,7 +879,12 @@ function renderPlannerChips() {
 }
 
 async function planTrip(place, coords) {
-  $("planInput").value = place;
+  const inp = $("planInput");
+  inp.value = place;
+  // flash the field so it's obvious the picked place landed here
+  inp.classList.remove("field-flash");
+  void inp.offsetWidth; // restart the animation
+  inp.classList.add("field-flash");
   S.lastPlan = { place, coords };
   const params = new URLSearchParams({ place, radius_km: $("planRadius").value });
   if (coords) {
@@ -1049,7 +1183,7 @@ function renderCrew(trip) {
 
 function flyToCity(city) {
   world.controls().autoRotate = false;
-  S.searchMarker = { ...city, type: "search", size: 0.34, dot: 0.13, alt: 0.008, color: "#ffffff" };
+  S.searchMarker = { ...city, type: "search", size: 0.34, dot: 0.13, alt: 0.01, color: C.sel };
   world.pointOfView({ lat: city.lat, lng: city.lng, altitude: 0.4 }, 900);
   setTimeout(() => { updateLOD(); openCityPop(city); }, 950);
 }
@@ -1069,6 +1203,7 @@ function openCityPop(city, x, y) {
     ([city.admin, countryName].filter(Boolean).join(", ") ||
       (city.pop ? city.pop.toLocaleString() + " people" : "")) +
     (status === "you" ? " · visited" : status === "wish" ? " · on your wishlist" : "");
+  focusPlace(city);   // mark the picked town on the globe
 
   const actions = [];
   if (status === "you") {
@@ -1225,6 +1360,7 @@ async function boot() {
     if (iso2) S.byIso2[iso2] = entry;
   }
   S.countries.sort((a, b) => a.name.localeCompare(b.name));
+  initStarfield();
   initGlobe(geo.features);
   initSearch();
 
@@ -1233,8 +1369,8 @@ async function boot() {
   const saved = localStorage.getItem("orbit_user");
   if (saved) {
     try {
-      S.user = await api("/api/state?user_id=" + saved);
-      renderAll();
+      const payload = await api("/api/state?user_id=" + saved);
+      setUser(payload); // picks the cached share code back up
       return;
     } catch { localStorage.removeItem("orbit_user"); }
   }
@@ -1353,13 +1489,19 @@ document.querySelectorAll("#lodPill button").forEach((b) =>
     setTimeout(updateLOD, 750);
   }));
 
-$("copyCode").addEventListener("click", () => {
-  navigator.clipboard.writeText(S.user?.share_code || "");
+function copyShareCode() {
+  const code = shareCodeDisplay();
+  if (!code) { switchView("friends"); toast("Tap “Reveal my code” to create one"); return; }
+  navigator.clipboard.writeText(code);
   toast("Share code copied — send it to a friend");
-});
-$("profileChip").addEventListener("click", () => {
-  navigator.clipboard.writeText(S.user?.share_code || "");
-  toast("Share code copied — send it to a friend");
+}
+$("copyCode").addEventListener("click", copyShareCode);
+$("profileChip").addEventListener("click", copyShareCode);
+$("regenCode").addEventListener("click", async () => {
+  try {
+    setUser(await api("/api/share_code/regenerate", { method: "POST", body: {} }));
+    toast("New share code ready — share this one with friends");
+  } catch (e) { toast(e.message); }
 });
 $("switchProfile").addEventListener("click", () => {
   localStorage.removeItem("orbit_user");

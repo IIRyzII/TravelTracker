@@ -1,0 +1,50 @@
+<!-- @dsCard group="Map" name="Globe markers & legend" subtitle="Status dots, selection highlight, legend chips" -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>ORBIT — Globe markers & legend</title>
+<style>
+  :root{ --page:#0d0d0d; --ocean:#122741; --ink:#fff; --ink-2:#c3c2b7; --muted:#898781;
+         --hairline:rgba(255,255,255,.10); --you:#3987e5; --wish:#c98500; --friend:#199e70;
+         --both:#9085e9; --sel:#ff5da2; --font:system-ui,-apple-system,"Segoe UI",sans-serif; }
+  *{ box-sizing:border-box; }
+  body{ margin:0; background:radial-gradient(ellipse 75% 60% at 50% 45%,#16233b,#101828 55%,#0d0d0d);
+        color:var(--ink); font-family:var(--font); padding:36px; }
+  h2{ font-size:12px; font-weight:700; letter-spacing:.08em; text-transform:uppercase; color:var(--muted); margin:0 0 12px; }
+  .markers{ display:flex; gap:34px; flex-wrap:wrap; margin-bottom:30px; }
+  .mk{ text-align:center; }
+  .mk .dot{ width:14px; height:14px; border-radius:50%; margin:0 auto 8px;
+            box-shadow:0 0 0 3px rgba(255,255,255,.06); }
+  .mk.sel .dot{ width:18px; height:18px; box-shadow:0 0 12px 2px rgba(255,93,162,.55); }
+  .mk .lbl{ font-size:13px; font-weight:650; }
+  .mk .who{ font-size:11.5px; color:var(--muted); }
+  .legend{ display:inline-flex; align-items:center; gap:14px; background:rgba(26,26,25,.88);
+           border:1px solid var(--hairline); border-radius:99px; padding:8px 18px; font-size:13px; }
+  .legend .chip{ display:inline-flex; align-items:center; gap:7px; color:var(--ink-2); font-weight:600; }
+  .legend .d{ width:10px; height:10px; border-radius:50%; }
+</style>
+</head>
+<body>
+  <h2>Place markers</h2>
+  <div class="markers">
+    <div class="mk"><div class="dot" style="background:#e8e6dc"></div><div class="lbl">Unvisited</div><div class="who">ambient</div></div>
+    <div class="mk"><div class="dot" style="background:var(--you)"></div><div class="lbl">Visited</div><div class="who">--you</div></div>
+    <div class="mk"><div class="dot" style="background:var(--wish)"></div><div class="lbl">Wishlist</div><div class="who">--wish</div></div>
+    <div class="mk sel"><div class="dot" style="background:var(--sel)"></div><div class="lbl" style="color:var(--sel)">Selected</div><div class="who">--sel</div></div>
+  </div>
+
+  <h2>Compare overlay</h2>
+  <div class="markers">
+    <div class="mk"><div class="dot" style="background:var(--you)"></div><div class="lbl">Only you</div></div>
+    <div class="mk"><div class="dot" style="background:var(--both)"></div><div class="lbl">Both</div></div>
+    <div class="mk"><div class="dot" style="background:var(--friend)"></div><div class="lbl">Only them</div></div>
+  </div>
+
+  <h2>Legend</h2>
+  <div class="legend">
+    <span class="chip"><i class="d" style="background:var(--you)"></i>Visited</span>
+    <span class="chip"><i class="d" style="background:var(--wish)"></i>Wishlist</span>
+  </div>
+</body>
+</html>

@@ -1,0 +1,33 @@
+<!-- @dsCard group="Foundations" name="Typography" subtitle="System sans, hero figure to muted labels" -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>ORBIT — Typography</title>
+<style>
+  :root{ --page:#0d0d0d; --ink:#fff; --ink-2:#c3c2b7; --muted:#898781; --you:#3987e5;
+         --hairline:rgba(255,255,255,.10); --font:system-ui,-apple-system,"Segoe UI",sans-serif; }
+  *{ box-sizing:border-box; }
+  body{ margin:0; background:var(--page); color:var(--ink); font-family:var(--font); padding:32px; }
+  .row{ display:flex; align-items:baseline; gap:16px; padding:12px 0; border-bottom:1px solid var(--hairline); }
+  .tag{ width:120px; flex:none; font-size:12px; color:var(--muted); }
+  .hero{ font-size:48px; font-weight:650; letter-spacing:-.01em; }
+  .h1{ font-size:30px; font-weight:800; }
+  .h2{ font-size:22px; font-weight:750; }
+  .body{ font-size:15px; color:var(--ink-2); }
+  .label{ font-size:12px; font-weight:600; letter-spacing:.02em; color:var(--muted);
+          text-transform:uppercase; }
+  .num{ font-size:30px; font-weight:650; }
+  .note{ color:var(--muted); font-size:12.5px; margin-top:20px; }
+</style>
+</head>
+<body>
+  <div class="row"><span class="tag">Hero figure</span><span class="hero">137,605</span></div>
+  <div class="row"><span class="tag">Heading 1 / 800</span><span class="h1">Your world, tracked</span></div>
+  <div class="row"><span class="tag">Heading 2 / 750</span><span class="h2">Planned trips</span></div>
+  <div class="row"><span class="tag">Body / 15</span><span class="body">Places you're going to get to — add a city, an island, a whole country.</span></div>
+  <div class="row"><span class="tag">Stat value / 650</span><span class="num">42</span></div>
+  <div class="row"><span class="tag">Label / caps</span><span class="label">Countries visited</span></div>
+  <p class="note">One family throughout: <code>system-ui, -apple-system, "Segoe UI", sans-serif</code>. Big standalone numbers use proportional figures; only aligned columns use tabular-nums.</p>
+</body>
+</html>

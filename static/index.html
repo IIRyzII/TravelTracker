@@ -34,6 +34,7 @@
 
 <!-- ═══ GLOBE (home) ═══ -->
 <main id="view-globe" class="view active">
+  <canvas id="starfield" aria-hidden="true"></canvas>
   <div id="globe"></div>
 
   <aside class="stats-rail" aria-label="Your travel stats">
@@ -136,6 +137,7 @@
       </div>
       <span class="row-actions">
         <button class="btn btn-primary" id="copyCode">Copy code</button>
+        <button class="btn btn-primary" id="regenCode" hidden title="Create a share code on this device">Reveal my code</button>
         <button class="btn btn-ghost" id="switchProfile" title="Log in as a different traveller">Switch traveller</button>
       </span>
     </div>

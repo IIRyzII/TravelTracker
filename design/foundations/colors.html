@@ -1,0 +1,63 @@
+<!-- @dsCard group="Foundations" name="Color tokens" subtitle="Palette, surfaces, status & selection" -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>ORBIT — Color tokens</title>
+<style>
+  :root {
+    --page:#0d0d0d; --surface:#1a1a19; --surface-2:#232322;
+    --ink:#fff; --ink-2:#c3c2b7; --muted:#898781;
+    --hairline:rgba(255,255,255,.10); --hairline-strong:rgba(255,255,255,.16);
+    --you:#3987e5; --wish:#c98500; --friend:#199e70; --both:#9085e9;
+    --sel:#ff5da2; --danger:#d03b3b; --good:#0ca30c;
+    --ocean:#122741; --land:#2b303b;
+    --font: system-ui,-apple-system,"Segoe UI",sans-serif;
+  }
+  * { box-sizing:border-box; }
+  body { margin:0; background:var(--page); color:var(--ink); font-family:var(--font); padding:28px; }
+  h1 { font-size:20px; font-weight:800; letter-spacing:.02em; margin:0 0 4px; }
+  p.lede { color:var(--ink-2); margin:0 0 22px; font-size:13.5px; }
+  h2 { font-size:12px; font-weight:700; letter-spacing:.08em; text-transform:uppercase;
+       color:var(--muted); margin:22px 0 10px; }
+  .grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(150px,1fr)); gap:12px; }
+  .sw { border:1px solid var(--hairline); border-radius:12px; overflow:hidden; background:var(--surface); }
+  .chip { height:64px; }
+  .meta { padding:9px 12px; }
+  .name { font-size:13px; font-weight:650; }
+  .hex { font-size:12px; color:var(--muted); font-variant-numeric:tabular-nums; }
+  .role { font-size:11.5px; color:var(--ink-2); margin-top:2px; }
+</style>
+</head>
+<body>
+  <h1>Color tokens</h1>
+  <p class="lede">Dark, high-contrast system. Status hues carry meaning; selection magenta is reserved for the currently-picked place and is used by nothing else.</p>
+
+  <h2>Status &amp; accents</h2>
+  <div class="grid">
+    <div class="sw"><div class="chip" style="background:#3987e5"></div><div class="meta"><div class="name">Visited</div><div class="hex">#3987e5</div><div class="role">--you</div></div></div>
+    <div class="sw"><div class="chip" style="background:#c98500"></div><div class="meta"><div class="name">Wishlist</div><div class="hex">#c98500</div><div class="role">--wish</div></div></div>
+    <div class="sw"><div class="chip" style="background:#199e70"></div><div class="meta"><div class="name">Friend-only</div><div class="hex">#199e70</div><div class="role">--friend</div></div></div>
+    <div class="sw"><div class="chip" style="background:#9085e9"></div><div class="meta"><div class="name">Both visited</div><div class="hex">#9085e9</div><div class="role">--both</div></div></div>
+    <div class="sw"><div class="chip" style="background:#ff5da2"></div><div class="meta"><div class="name">Selection</div><div class="hex">#ff5da2</div><div class="role">--sel</div></div></div>
+    <div class="sw"><div class="chip" style="background:#d03b3b"></div><div class="meta"><div class="name">Danger</div><div class="hex">#d03b3b</div><div class="role">--danger</div></div></div>
+    <div class="sw"><div class="chip" style="background:#0ca30c"></div><div class="meta"><div class="name">Good</div><div class="hex">#0ca30c</div><div class="role">--good</div></div></div>
+  </div>
+
+  <h2>Globe &amp; surfaces</h2>
+  <div class="grid">
+    <div class="sw"><div class="chip" style="background:#0d0d0d"></div><div class="meta"><div class="name">Page</div><div class="hex">#0d0d0d</div><div class="role">--page</div></div></div>
+    <div class="sw"><div class="chip" style="background:#122741"></div><div class="meta"><div class="name">Ocean</div><div class="hex">#122741</div><div class="role">--ocean</div></div></div>
+    <div class="sw"><div class="chip" style="background:#2b303b"></div><div class="meta"><div class="name">Land</div><div class="hex">#2b303b</div><div class="role">--land</div></div></div>
+    <div class="sw"><div class="chip" style="background:#1a1a19"></div><div class="meta"><div class="name">Surface</div><div class="hex">#1a1a19</div><div class="role">--surface</div></div></div>
+    <div class="sw"><div class="chip" style="background:#232322"></div><div class="meta"><div class="name">Surface 2</div><div class="hex">#232322</div><div class="role">--surface-2</div></div></div>
+  </div>
+
+  <h2>Ink</h2>
+  <div class="grid">
+    <div class="sw"><div class="chip" style="background:#ffffff"></div><div class="meta"><div class="name">Primary</div><div class="hex">#ffffff</div><div class="role">--ink</div></div></div>
+    <div class="sw"><div class="chip" style="background:#c3c2b7"></div><div class="meta"><div class="name">Secondary</div><div class="hex">#c3c2b7</div><div class="role">--ink-2</div></div></div>
+    <div class="sw"><div class="chip" style="background:#898781"></div><div class="meta"><div class="name">Muted</div><div class="hex">#898781</div><div class="role">--muted</div></div></div>
+  </div>
+</body>
+</html>
