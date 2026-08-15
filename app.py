@@ -20,7 +20,9 @@ import urllib.request
 from flask import Flask, g, jsonify, request, send_from_directory
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-DB_PATH = os.path.join(BASE_DIR, "traveltracker.db")
+# ORBIT_DB lets a host point the database at a persistent disk (e.g. Render disk)
+# so saved profiles/trips survive redeploys; defaults to a local file otherwise.
+DB_PATH = os.environ.get("ORBIT_DB") or os.path.join(BASE_DIR, "traveltracker.db")
 LEGACY_DB = os.path.join(BASE_DIR, "Visited_Places.DB")
 GEOJSON_PATH = os.path.join(BASE_DIR, "static", "data", "countries.geojson")
 ACTIVITIES_PATH = os.path.join(BASE_DIR, "data", "activities.json")
@@ -1049,4 +1051,6 @@ def init_db():
 init_db()
 
 if __name__ == "__main__":
-    app.run(debug=True, port=5000)
+    # local dev only — on Render the app is served by gunicorn (see Procfile),
+    # which imports `app:app` and never runs this block
+    app.run(debug=True, port=int(os.environ.get("PORT", 5000)))

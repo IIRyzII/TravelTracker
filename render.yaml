@@ -1,0 +1,17 @@
+# Render blueprint — lets you deploy ORBIT with "New +" → "Blueprint".
+# Render reads this file and configures the web service automatically.
+services:
+  - type: web
+    name: orbit
+    runtime: python
+    plan: free
+    buildCommand: pip install -r requirements.txt
+    startCommand: gunicorn app:app --bind 0.0.0.0:$PORT --workers 2 --timeout 30
+    envVars:
+      - key: PYTHON_VERSION
+        value: 3.12.6
+      # Your Google Maps key — Render will PROMPT you to type it in the
+      # dashboard (sync:false keeps it a secret, never stored in the repo).
+      # Leave it unset and the app still runs on the 22 curated shortlists.
+      - key: GOOGLE_MAPS_API_KEY
+        sync: false
