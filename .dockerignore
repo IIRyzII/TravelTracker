@@ -12,6 +12,5 @@ config.json
 .env
 tests
 screenshots
-data/geonames-cities.json
 static/**/*.gz
 static/**/*.br

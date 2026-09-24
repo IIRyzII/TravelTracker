@@ -3,7 +3,7 @@
 import { api } from "./api.js";
 import { switchView } from "./nav.js";
 import {
-  $, C, S, centroid, cityKey, cityStatus, countryStatus, flag, isPhone, isTouch,
+  $, C, S, centroid, cityKey, cityStatus, countryStatus, flag, fold, isPhone, isTouch,
   setUser, toast, visitedSet,
 } from "./state.js";
 import { planTrip } from "./views/planner.js";
@@ -29,7 +29,6 @@ const CONTINENT_VIEWS = {
 const STATUS_LABEL = {
   you: "Visited", wish: "On your wishlist", friend: "", both: "", none: "Not visited yet",
 };
-const DATA_VERSION = "2"; // bump when the city files change (they're cached for a week)
 
 /* far enough out that the whole globe fits a narrow portrait screen */
 function homeAltitude() {
@@ -194,7 +193,9 @@ export function flyToCity(city) {
 const tierLoads = {};
 function loadCityTier(tier) {
   if (!tierLoads[tier]) {
-    tierLoads[tier] = fetch(`/static/data/cities-${tier}.json?v=${DATA_VERSION}`)
+    // the version is a fingerprint of the files (they're cached for a week)
+    const version = S.config.data_version || "1";
+    tierLoads[tier] = fetch(`/static/data/cities-${tier}.json?v=${version}`)
       .then((r) => { if (!r.ok) throw new Error(r.status); return r.json(); })
       .then((raw) => {
         addToGrid(raw);
@@ -427,7 +428,7 @@ export function openCityPop(city, x, y) {
   const placeLabel = city.name + (countryName ? ", " + countryName : "");
   const status = cityStatus(city);
   const wishItem = (S.user?.wishlist || []).find(
-    (w) => w.place.split(",")[0].trim().toLowerCase() === city.name.toLowerCase());
+    (w) => fold(w.place.split(",")[0]) === fold(city.name));
 
   $("popFlag").textContent = flag(city.iso2);
   $("popName").textContent = city.name;

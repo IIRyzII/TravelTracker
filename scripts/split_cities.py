@@ -2,15 +2,15 @@
 
     python scripts/split_cities.py
 
-data/geonames-cities.json holds 137k places ([name, iso2, lat, lng, population],
-sorted by population, from GeoNames — CC BY 4.0). Phones shouldn't download all
-5 MB just to show cities, so:
+data/geonames-cities.json holds 137k places ([name, iso2, lat, lng, population,
+…], sorted by population, from GeoNames — CC BY 4.0; scripts/build_places.py
+rebuilds it). Phones shouldn't download all 5 MB just to show cities, so:
 
   static/data/cities-1.json   population >= 15,000 — loaded at City zoom
   static/data/cities-2.json   everything smaller   — loaded at Town zoom (or
                                                      prefetched on good connections)
 
-Bump DATA_VERSION in static/js/globe.js after regenerating.
+The app notices new files by itself (orbit/__init__.py fingerprints them).
 """
 
 import json
@@ -25,8 +25,10 @@ CITY_MIN_POP = 15_000
 def main():
     with open(SOURCE, encoding="utf-8") as f:
         places = json.load(f)
-    cities = [p for p in places if p[4] >= CITY_MIN_POP]
-    towns = [p for p in places if p[4] < CITY_MIN_POP]
+    # the globe only needs [name, iso2, lat, lng, population]; regions and other
+    # names stay server-side for search
+    cities = [p[:5] for p in places if p[4] >= CITY_MIN_POP]
+    towns = [p[:5] for p in places if p[4] < CITY_MIN_POP]
     for name, rows in (("cities-1.json", cities), ("cities-2.json", towns)):
         path = os.path.join(OUT, name)
         with open(path, "w", encoding="utf-8") as f:

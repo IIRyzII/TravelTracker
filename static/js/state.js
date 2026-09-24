@@ -128,8 +128,21 @@ export function fmtDate(iso) {
 export function visitedSet() { return new Set((S.user?.visited || []).map((v) => v.code)); }
 export function wishSet() { return new Set((S.user?.wishlist || []).map((w) => w.code).filter(Boolean)); }
 
-/* city-level status keys: "name|ISO2", lowercased */
-export const cityKey = (name, iso2) => `${(name || "").toLowerCase()}|${iso2 || ""}`;
+/* the same spelling-tolerant form the server matches place names in
+   (orbit/places.py fold): 'Zürich', 'Zuerich' and 'zurich' are one place */
+const LETTERS = { "ß": "ss", "ø": "o", "Ø": "o", "æ": "ae", "Æ": "ae", "œ": "oe", "Œ": "oe",
+  "ł": "l", "Ł": "l", "đ": "d", "Đ": "d", "ı": "i", "þ": "th" };
+export function fold(text) {
+  return (text || "")
+    .replace(/[ßøØæÆœŒłŁđĐıþ]/g, (c) => LETTERS[c])
+    .normalize("NFKD").replace(/[\u0300-\u036f]/g, "").toLowerCase()
+    .replace(/ae/g, "a").replace(/oe/g, "o").replace(/ue/g, "u")
+    .replace(/[^a-z0-9]+/g, " ")
+    .replace(/\b(saint|ste)\b/g, "st").trim();
+}
+
+/* city-level status keys: "folded name|ISO2" */
+export const cityKey = (name, iso2) => `${fold(name)}|${iso2 || ""}`;
 function visitedCityKeys() {
   return new Set((S.user?.visited_cities || []).map((c) => cityKey(c.name, c.iso2)));
 }

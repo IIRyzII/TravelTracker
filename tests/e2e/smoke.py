@@ -88,6 +88,14 @@ def run(name, opts, browser, failures):
     shot("2-globe")
     check_overflow("globe")
 
+    # city search runs on ORBIT's own place data (accents don't matter)
+    page.fill("#countrySearch", "Zürich")
+    page.wait_for_selector('#searchResults li[data-kind="city"]', timeout=5000)
+    first_city = page.inner_text('#searchResults li[data-kind="city"]')
+    if "Zuerich" not in first_city:
+        failures.append(f"{name}: city search for Zürich found {first_city!r}")
+    page.fill("#countrySearch", "")
+
     page.fill("#countrySearch", "Japan")
     page.wait_for_selector('#searchResults li[data-kind="country"]')
     page.click('#searchResults li[data-kind="country"]')

@@ -70,7 +70,7 @@ def user_payload(db, user):
 def trip_payload(db, trip, user):
     items = [dict(r) for r in db.execute(
         "SELECT i.id, i.category, i.title, i.detail, i.rating, i.rating_count, "
-        "i.address, i.maps_url, i.open_days, i.done, "
+        "i.address, i.maps_url, i.open_days, i.done, (i.place_id IS NOT NULL) AS from_google, "
         "(SELECT COUNT(*) FROM trip_votes v WHERE v.item_id=i.id) AS votes, "
         "EXISTS(SELECT 1 FROM trip_votes v WHERE v.item_id=i.id AND v.user_id=?) AS my_vote "
         "FROM trip_items i WHERE i.trip_id=? ORDER BY i.id", (user["id"], trip["id"]))]

@@ -7,7 +7,8 @@ from flask import Blueprint, jsonify
 from .auth import login_required
 from .db import get_db
 from .payloads import trip_payload, user_payload
-from .util import field, json_body, number
+from .planner import PLACE_ID, maps_search_url
+from .util import field, json_body
 
 bp = Blueprint("trips", __name__)
 
@@ -26,10 +27,6 @@ def clean_url(value):
     """Only https links get stored — they're rendered as hrefs for the whole crew."""
     value = (value if isinstance(value, str) else "").strip()[:500]
     return value if value.startswith("https://") else None
-
-
-def clean_open_days(value):
-    return value if isinstance(value, str) and re.fullmatch(r"[01]{7}", value) else None
 
 
 def owned_trip(db, user, trip_id):
@@ -79,14 +76,20 @@ def save_trip(user):
         if is_friend:
             db.execute("INSERT OR IGNORE INTO trip_members VALUES(?,?)", (trip_id, fid))
     for it in items[:60]:
-        count = number(it.get("rating_count"))
+        title = field(it, "title", 120)
+        place_id = field(it, "place_id", 300)
+        if place_id or it.get("source") == "google":
+            # from Google Maps: keep only what Google lets us store (name, place ID, link)
+            place_id = place_id if PLACE_ID.fullmatch(place_id) else None
+            db.execute(
+                "INSERT INTO trip_items(trip_id, category, title, maps_url, place_id) VALUES(?,?,?,?,?)",
+                (trip_id, field(it, "category", 40), title, maps_search_url(title, place_id), place_id),
+            )
+            continue
         db.execute(
-            "INSERT INTO trip_items(trip_id, category, title, detail, rating, rating_count, address, maps_url, open_days) "
-            "VALUES(?,?,?,?,?,?,?,?,?)",
-            (trip_id, field(it, "category", 40), field(it, "title", 120),
-             field(it, "desc", 300), number(it.get("rating")),
-             int(count) if count is not None else None, field(it, "address", 200),
-             clean_url(it.get("maps_url")), clean_open_days(it.get("open_days"))),
+            "INSERT INTO trip_items(trip_id, category, title, detail, maps_url) VALUES(?,?,?,?,?)",
+            (trip_id, field(it, "category", 40), title, field(it, "desc", 300),
+             clean_url(it.get("maps_url"))),
         )
     db.commit()
     payload = user_payload(db, user)

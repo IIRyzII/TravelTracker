@@ -8,12 +8,12 @@ def live(app, monkeypatch):
     """Google Maps 'on', with the network calls faked and counted."""
     app.config.update(GOOGLE_MAPS_API_KEY="fake-key", PLACES_FREE_DAILY=2,
                       PLACES_GLOBAL_DAILY_CAP=100)
-    planner._places_cache.clear()
     calls = []
 
     def fake_search(query, bias=None, limit=10):
         calls.append(query)
-        return [{"displayName": {"text": f"{query} #{i}"}, "rating": 4.5, "userRatingCount": 500,
+        return [{"id": f"ChIJplace{i:04d}", "displayName": {"text": f"{query} #{i}"},
+                 "rating": 4.5, "userRatingCount": 500, "formattedAddress": "1 Harbour St",
                  "googleMapsUri": "https://maps.google.com/?cid=1"} for i in range(2)]
 
     monkeypatch.setattr(planner, "places_text_search", fake_search)
@@ -28,16 +28,41 @@ def test_live_results_use_the_daily_allowance(make_user, live):
     first = c.get("/api/itinerary?place=Chania").json
     assert first["live"] and first["live_left"] == 1
     assert len(live) == 4  # one Places query per category
+    item = first["items"][0]
+    assert item["source"] == "google" and item["place_id"] == "ChIJplace0000"
+    assert "query_place_id=ChIJplace0000" in item["maps_url"]
 
-    # the same search again comes from the cache: free
+    # nothing is cached (Google's terms), so a repeat search is a fresh lookup
     again = c.get("/api/itinerary?place=Chania").json
-    assert again["live"] and again["live_left"] == 1 and len(live) == 4
+    assert again["live"] and again["live_left"] == 0 and len(live) == 8
 
-    c.get("/api/itinerary?place=Rethymno")
     capped = c.get("/api/itinerary?place=Heraklion").json
     assert not capped["live"] and capped["live_limited"]
     assert capped["curated"]  # Heraklion falls back to the curated Crete list
     assert len(live) == 8
+
+
+def test_saved_trips_keep_only_what_google_allows(app, make_user, live):
+    c, _ = make_user()
+    plan = c.get("/api/itinerary?place=Chania").json
+    live_item = plan["items"][0]
+    assert live_item["rating"] and live_item["desc"] is not None
+    trip_id = c.post("/api/trips", json={"destination": "Chania", "items": [
+        live_item,
+        {"category": "Must-see", "title": "Our own tip", "desc": "ORBIT's curated text",
+         "maps_url": "https://www.google.com/maps/search/?api=1&query=tip"},
+    ]}).json["saved_trip_id"]
+    google, curated = c.get(f"/api/trips/{trip_id}").json["items"]
+    assert google["title"] == live_item["title"] and google["from_google"]
+    assert "query_place_id=ChIJplace0000" in google["maps_url"]
+    assert google["rating"] is None and google["rating_count"] is None
+    assert google["detail"] is None and google["open_days"] is None and google["address"] is None
+    assert curated["detail"] == "ORBIT's curated text" and not curated["from_google"]
+
+
+def test_geocoding_uses_local_places():
+    assert planner.geocode_place("Chania, Greece") == pytest.approx((35.511, 24.029), abs=0.01)
+    assert planner.geocode_place("Nowhere-at-all-ville") is None
 
 
 def test_pro_plan_gets_more(app, make_user, live):

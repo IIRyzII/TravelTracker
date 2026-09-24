@@ -1,18 +1,19 @@
 """Trip planner: live Google Maps shortlists (metered), curated lists, city lookup."""
 
 import json
-import time
+import re
 import urllib.error
 import urllib.parse
 import urllib.request
 
 from flask import Blueprint, current_app, jsonify, request
 
+from . import places
 from .auth import login_required
 from .db import get_db
 from .geo import ACTIVITIES, _norm, find_country
 from .plans import live_lookups_left, record_usage
-from .util import limiter, remember, user_or_ip
+from .util import limiter, user_or_ip
 
 bp = Blueprint("planner", __name__)
 
@@ -34,45 +35,23 @@ CATEGORY_QUERIES = [
     ("Night out", "best bars and nightlife in {}"),
 ]
 
-_places_cache = {}  # dest.lower()|bias -> (timestamp, items)
-PLACES_TTL = 6 * 3600
-_geo_cache = {}
-_cities_cache = {}
+PLACE_ID = re.compile(r"[A-Za-z0-9_-]{10,300}")
 
 
-def maps_search_url(query):
-    return "https://www.google.com/maps/search/?api=1&query=" + urllib.parse.quote(query)
-
-
-def open_meteo_search(name, count):
-    url = "https://geocoding-api.open-meteo.com/v1/search?" + urllib.parse.urlencode(
-        {"name": name, "count": count, "language": "en", "format": "json"})
-    with urllib.request.urlopen(url, timeout=5) as r:
-        return json.load(r).get("results") or []
+def maps_search_url(query, place_id=None):
+    """A Google Maps link. With a place ID it opens that exact place (Google's
+    terms let us keep place IDs; the rest of its place data we don't store)."""
+    params = {"api": 1, "query": query}
+    if place_id:
+        params["query_place_id"] = place_id
+    return "https://www.google.com/maps/search/?" + urllib.parse.urlencode(params)
 
 
 def geocode_place(place):
-    """Rough centre for a free-text place via the Open-Meteo geocoder (cached)."""
-    key = place.lower()
-    if key in _geo_cache:
-        return _geo_cache[key]
-    first = place.split(",")[0].strip()
-    hint = place.split(",")[-1].strip().lower() if "," in place else None
-    results = []
-    try:
-        results = open_meteo_search(first, 10)
-    except (urllib.error.URLError, OSError, ValueError):
-        pass
-    pick = None
-    if hint:  # "Chania, Greece" -> prefer the match whose country is Greece
-        for res in results:
-            if hint in {(res.get("country") or "").lower(), (res.get("admin1") or "").lower()}:
-                pick = res
-                break
-    if not pick and results:
-        pick = results[0]
-    remember(_geo_cache, key, (pick["latitude"], pick["longitude"]) if pick else None)
-    return _geo_cache[key]
+    """Rough centre of a free-text place like 'Chania, Greece', from ORBIT's own
+    place data — no outside service."""
+    match = places.index().find(place)
+    return (match["lat"], match["lng"]) if match else None
 
 
 def places_text_search(query, bias=None, limit=10):
@@ -85,7 +64,7 @@ def places_text_search(query, bias=None, limit=10):
         headers={
             "Content-Type": "application/json",
             "X-Goog-Api-Key": current_app.config["GOOGLE_MAPS_API_KEY"],
-            "X-Goog-FieldMask": "places.displayName,places.rating,"
+            "X-Goog-FieldMask": "places.id,places.displayName,places.rating,"
                                 "places.userRatingCount,places.formattedAddress,"
                                 "places.googleMapsUri,places.regularOpeningHours",
         },
@@ -116,19 +95,11 @@ def parse_open_days(place):
     return "".join(days)
 
 
-def _cache_key(dest_label, bias):
-    return dest_label.lower() + "|" + (json.dumps(bias, sort_keys=True) if bias else "")
-
-
-def cached_itinerary(dest_label, bias=None):
-    cached = _places_cache.get(_cache_key(dest_label, bias))
-    if cached and time.time() - cached[0] < PLACES_TTL:
-        return cached[1]
-    return None
-
-
 def live_itinerary(dest_label, bias=None):
-    """Top-rated real places from Google Maps, per category. None on any failure."""
+    """Top-rated real places from Google Maps, per category. None on any failure.
+
+    Not cached: Google's terms only allow keeping place IDs, so every live
+    shortlist is a fresh lookup (which is why they're metered per user)."""
     items, seen = [], set()
     for category, query in CATEGORY_QUERIES:
         try:
@@ -148,22 +119,22 @@ def live_itinerary(dest_label, bias=None):
             if not name or name.lower() in seen:
                 continue
             seen.add(name.lower())
+            place_id = p.get("id") if PLACE_ID.fullmatch(p.get("id") or "") else None
             items.append({
                 "category": category,
                 "title": name,
                 "desc": p.get("formattedAddress") or "",
                 "rating": p.get("rating"),
                 "rating_count": p.get("userRatingCount"),
-                "maps_url": p.get("googleMapsUri") or maps_search_url(f"{name} {dest_label}"),
+                "maps_url": maps_search_url(name, place_id),
                 "open_days": parse_open_days(p),
+                "place_id": place_id,
+                "source": "google",
             })
             added += 1
             if added >= 6:
                 break
-    if not items:
-        return None
-    remember(_places_cache, _cache_key(dest_label, bias), (time.time(), items))
-    return items
+    return items or None
 
 
 def match_curated(place):
@@ -207,15 +178,13 @@ def itinerary(user):
         if center and radius_km and not is_whole_country:
             bias = {"circle": {"center": {"latitude": center[0], "longitude": center[1]},
                                "radius": radius_km * 1000}}
-        # cached answers are free; fresh ones spend the daily allowance
-        live = cached_itinerary(place, bias)
-        if live is None:
-            if live_lookups_left(db, user) > 0:
-                live = live_itinerary(place, bias)
-                if live:
-                    record_usage(db, user["id"], "places")
-            else:
-                live_limited = True
+        live = None
+        if live_lookups_left(db, user) > 0:
+            live = live_itinerary(place, bias)
+            if live:
+                record_usage(db, user["id"], "places")
+        else:
+            live_limited = True
         if live:
             return jsonify(
                 destination=place if bias else label,
@@ -246,31 +215,12 @@ def itinerary(user):
 
 
 @bp.get("/api/cities")
-@limiter.limit("60/minute")
+@limiter.limit("120/minute")
 def cities():
-    """City lookup via the free Open-Meteo geocoder (no key needed)."""
+    """City and town search over ORBIT's own place data (orbit/places.py)."""
     q = (request.args.get("q") or "").strip()[:60]
-    if len(q) < 2:
-        return jsonify([])
-    key = q.lower()
-    if key not in _cities_cache:
-        try:
-            results = open_meteo_search(q, 6)
-        except (urllib.error.URLError, OSError, ValueError):
-            return jsonify([])
-        remember(_cities_cache, key, [
-            {
-                "name": res.get("name"),
-                "country": res.get("country"),
-                "iso2": (res.get("country_code") or "").upper(),
-                "admin": res.get("admin1"),
-                "lat": res.get("latitude"),
-                "lng": res.get("longitude"),
-            }
-            for res in results
-            if res.get("latitude") is not None
-        ], limit=2000)
-    return jsonify(_cities_cache[key])
+    return jsonify([{k: r[k] for k in ("name", "country", "iso2", "admin", "lat", "lng", "pop")}
+                    for r in places.index().search(q)])
 
 
 @bp.get("/api/destinations")

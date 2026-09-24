@@ -104,7 +104,7 @@ function renderTripDetail() {
   }
   $("travelSummary").innerHTML = bits.length
     ? bits.join(" &nbsp;·&nbsp; ")
-    : "Add your flight and dates — anything closed while you're there gets flagged.";
+    : "Add your flight and dates.";
 
   $("travelForm").hidden = !trip.is_owner;
   renderCrew(trip);
@@ -115,7 +115,8 @@ function renderTripDetail() {
   const hasCrew = trip.members.length > 0;
   $("tripSections").innerHTML = sectionsHtml(items, {
     done: true, days, votes: hasCrew, canRemove: trip.is_owner,
-  });
+  }) + (items.some((i) => i.from_google)
+    ? `<p class="maps-credit">Places from Google Maps</p>` : "");
 
   $("tripSections").querySelectorAll(".itin-item").forEach((card) => {
     const itemId = +card.dataset.id;

@@ -6,6 +6,7 @@ from .auth import login_required
 from .db import get_db
 from .geo import COUNTRIES_BY_CODE, COUNTRIES_BY_ISO2, find_country
 from .payloads import user_payload
+from .places import fold
 from .util import field, json_body, number
 
 bp = Blueprint("travel", __name__)
@@ -52,6 +53,14 @@ def remove_visited(user):
     return jsonify(user_payload(db, user))
 
 
+def same_city_rows(db, user, name, iso2):
+    """The user's logged cities that are this place, however it was spelt."""
+    key = fold(name)
+    return [r for r in db.execute("SELECT name, iso2 FROM visited_cities WHERE user_id=? AND iso2=?",
+                                  (user["id"], iso2))
+            if fold(r["name"]) == key]
+
+
 @bp.post("/api/visited_city")
 @login_required
 def add_visited_city(user):
@@ -61,10 +70,12 @@ def add_visited_city(user):
     iso2 = field(body, "iso2", 2).upper()
     if not name:
         return jsonify(error="Unknown place."), 400
-    db.execute(
-        "INSERT OR IGNORE INTO visited_cities(user_id, name, iso2, lat, lng) VALUES(?,?,?,?,?)",
-        (user["id"], name, iso2, number(body.get("lat")), number(body.get("lng"))),
-    )
+    # 'Zürich' and 'Zuerich' are the same place — don't log it twice
+    if not same_city_rows(db, user, name, iso2):
+        db.execute(
+            "INSERT INTO visited_cities(user_id, name, iso2, lat, lng) VALUES(?,?,?,?,?)",
+            (user["id"], name, iso2, number(body.get("lat")), number(body.get("lng"))),
+        )
     # setting foot in a city means you've been to the country too
     country = COUNTRIES_BY_ISO2.get(iso2)
     if country:
@@ -81,10 +92,9 @@ def add_visited_city(user):
 def remove_visited_city(user):
     db = get_db()
     body = json_body()
-    db.execute(
-        "DELETE FROM visited_cities WHERE user_id=? AND name=? AND iso2=?",
-        (user["id"], field(body, "name", 80), field(body, "iso2", 2).upper()),
-    )
+    for row in same_city_rows(db, user, field(body, "name", 80), field(body, "iso2", 2).upper()):
+        db.execute("DELETE FROM visited_cities WHERE user_id=? AND name=? AND iso2=?",
+                   (user["id"], row["name"], row["iso2"]))
     db.commit()
     return jsonify(user_payload(db, user))
 

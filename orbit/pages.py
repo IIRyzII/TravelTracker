@@ -78,4 +78,5 @@ def public_config():
     cfg = current_app.config
     return jsonify(google_client_id=cfg["GOOGLE_CLIENT_ID"],
                    live_places=bool(cfg["GOOGLE_MAPS_API_KEY"]),
+                   data_version=cfg["DATA_VERSION"],
                    signed_in=current_user() is not None)

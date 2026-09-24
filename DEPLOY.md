@@ -33,8 +33,9 @@ HTTPS certificates are automatic.
 ## 2. Check the legal pages still match
 
 `/privacy` and `/terms` (`static/legal/`) describe ORBIT as it runs today:
-hosted on Render in Frankfurt, emails through Resend, city search through
-Open-Meteo, no Google sign-in, accounts deleted after 3 months without use.
+hosted on Render in Frankfurt, emails through Resend, live planner results from
+Google Maps, city search on ORBIT's own data, no Google sign-in, accounts
+deleted after 3 months without use.
 If you change any of that, update the pages too (each has a comment listing
 what to watch). It's worth having them checked by someone qualified.
 
@@ -70,7 +71,10 @@ one, it shows live top-rated places.
    restrictions → Restrict key → Places API (New)** only.
 3. **Protect your bill:**
    - Each live shortlist makes **4** Places requests (one per category).
-     Results are cached for 6 hours, so repeated searches are free.
+     Google's terms only allow keeping a place's ID, so ORBIT doesn't cache
+     results: every live shortlist, including changing the radius, is a fresh
+     lookup. For the same reason, saved trips keep each place's name, place ID
+     and Maps link, but not its rating, address or opening hours.
    - ORBIT limits each user to `PLACES_FREE_DAILY` live shortlists a day
      (default 3) and the whole site to `PLACES_GLOBAL_DAILY_CAP` (default 300,
      which is about 1,200 requests a day). Once a limit is hit, the planner
@@ -95,6 +99,21 @@ never deleted, because ORBIT won't delete an account without warning its owner f
    verified domain).
 
 Locally, with no key, the reset link is printed in the server log instead.
+
+## Improving city search (run once)
+
+City search runs on ORBIT's own copy of GeoNames' place list, with no outside
+service. The copy in the repo only has English spellings, so "München",
+"Firenze" or "Lisboa" find nothing, and three "Portland"s look identical. One
+command rebuilds it with other-language names and regions (Oregon, Maine),
+downloading GeoNames' free data (about 30 MB):
+
+```
+python scripts/build_places.py
+```
+
+Then commit `data/geonames-cities.json` and `static/data/cities-*.json`. The
+app notices the new files by itself.
 
 ## Settings reference
 
@@ -147,7 +166,8 @@ deployment starts with an empty database.
 
 | Script | When |
 |---|---|
-| `scripts/split_cities.py` | after changing `data/geonames-cities.json` (then bump `DATA_VERSION` in `static/js/globe.js`) |
+| `scripts/build_places.py` | once, to add other-language names and regions to city search (see "Improving city search" below) |
+| `scripts/split_cities.py` | after editing `data/geonames-cities.json` by hand (`build_places.py` runs it for you) |
 | `scripts/make_icons.py` | after changing the logo |
 | `scripts/make_og_image.py URL` | to refresh the link-preview image |
 

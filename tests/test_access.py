@@ -126,8 +126,10 @@ def test_trip_item_urls_are_sanitised(make_user):
     ann_c, _ = make_user("Ann")
     trip_id = _trip(ann_c)["saved_trip_id"]
     items = ann_c.get(f"/api/trips/{trip_id}").json["items"]
-    assert items[0]["maps_url"].startswith("https://") and items[0]["open_days"] == "0111111"
-    assert items[1]["maps_url"] is None and items[1]["open_days"] is None
+    assert items[0]["maps_url"].startswith("https://")
+    assert items[1]["maps_url"] is None  # javascript: links are dropped
+    # opening days only ever came from Google, which saved trips no longer keep
+    assert items[0]["open_days"] is None and items[1]["open_days"] is None
 
 
 def test_visiting_a_city_marks_its_country(make_user):

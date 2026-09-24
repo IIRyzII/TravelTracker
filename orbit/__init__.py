@@ -3,7 +3,9 @@
 create_app() wires config, the database, security headers and the blueprints.
 """
 
+import hashlib
 import os
+import threading
 from urllib.parse import urlsplit
 
 from flask import Flask, jsonify, request
@@ -11,7 +13,7 @@ from werkzeug.exceptions import HTTPException
 from werkzeug.middleware.proxy_fix import ProxyFix
 from whitenoise import WhiteNoise
 
-from . import account, auth, pages, planner, social, travel, trips
+from . import account, auth, pages, places, planner, social, travel, trips
 from .config import BASE_DIR, load_config
 from .db import close_db, init_db
 from .util import limiter
@@ -45,9 +47,20 @@ def _static_headers(headers, _path, url):
         headers["Cache-Control"] = "no-cache"
 
 
+def data_version():
+    """Fingerprint of the globe's place files. The browser caches them for a week,
+    so their URLs carry this — rebuilt data reaches everyone straight away."""
+    digest = hashlib.sha1()
+    for name in ("cities-1.json", "cities-2.json"):
+        with open(os.path.join(BASE_DIR, "static", "data", name), "rb") as f:
+            digest.update(f.read())
+    return digest.hexdigest()[:10]
+
+
 def create_app(overrides=None):
     app = Flask(__name__, static_folder=None)
     app.config.update(load_config())
+    app.config["DATA_VERSION"] = data_version()
     if overrides:
         app.config.update(overrides)
 
@@ -59,6 +72,9 @@ def create_app(overrides=None):
     )
 
     init_db(app.config["DATABASE_PATH"])
+    if not app.config.get("TESTING"):
+        # build the city-search index now rather than on the first search
+        threading.Thread(target=places.index, daemon=True).start()
     app.teardown_appcontext(close_db)
     limiter.init_app(app)
 

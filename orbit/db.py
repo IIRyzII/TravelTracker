@@ -144,7 +144,22 @@ def migrate_3(db):
     """)
 
 
-MIGRATIONS = [migrate_1, migrate_2, migrate_3]
+def migrate_4(db):
+    """Google's terms let us keep a place's ID but not its other details, so saved
+    trips hold the name, a Maps link and the place ID. Items saved from live
+    results before this (the only ones with ratings or opening days) lose the rest."""
+    db.executescript("""
+    BEGIN;
+    ALTER TABLE trip_items ADD COLUMN place_id TEXT;
+    UPDATE trip_items SET detail = NULL, rating = NULL, rating_count = NULL,
+                          address = NULL, open_days = NULL
+        WHERE rating IS NOT NULL OR open_days IS NOT NULL;
+    PRAGMA user_version = 4;
+    COMMIT;
+    """)
+
+
+MIGRATIONS = [migrate_1, migrate_2, migrate_3, migrate_4]
 
 
 def connect(path):

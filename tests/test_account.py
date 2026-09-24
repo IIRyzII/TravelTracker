@@ -69,12 +69,16 @@ def test_migrates_a_pre_accounts_database(tmp_path):
     db.execute("INSERT INTO users(username, share_code) VALUES('Ryley', 'ABC234')")
     db.execute("INSERT INTO visited(user_id, country_code, country_name) VALUES(1, 'FRA', 'France')")
     db.execute("INSERT INTO trips(user_id, destination) VALUES(1, 'Rome')")
+    db.execute("INSERT INTO trip_items(trip_id, category, title, detail, rating, rating_count, maps_url) "
+               "VALUES(1, 'Must-see', 'Colosseum', 'Piazza del Colosseo', 4.7, 90000, 'https://maps.google.com/?cid=9')")
+    db.execute("INSERT INTO trip_items(trip_id, category, title, detail) "
+               "VALUES(1, 'Night out', 'Trastevere', 'ORBIT curated tip')")
     db.commit()
     db.close()
 
     app = create_app({"DATABASE_PATH": str(path), "RATELIMIT_ENABLED": False})
     db = sqlite3.connect(path)
-    assert db.execute("PRAGMA user_version").fetchone()[0] == 3
+    assert db.execute("PRAGMA user_version").fetchone()[0] == 4
     row = db.execute("SELECT username, share_code, email, plan, auth_version FROM users").fetchone()
     assert row == ("Ryley", "ABC234", None, "free", 1)
     # old accounts start the inactivity clock at the upgrade, not at 0
@@ -82,6 +86,9 @@ def test_migrates_a_pre_accounts_database(tmp_path):
     cols = {r[1] for r in db.execute("PRAGMA table_info(trips)")}
     assert {"flight_number", "start_date", "end_date"} <= cols
     assert db.execute("PRAGMA foreign_key_check").fetchall() == []
+    # Google details saved before migration 4 are cleared; ORBIT's own text stays
+    items = db.execute("SELECT title, detail, rating, rating_count FROM trip_items ORDER BY id").fetchall()
+    assert items == [("Colosseum", None, None, None), ("Trastevere", "ORBIT curated tip", None, None)]
     db.close()
 
     # claim the old profile, then sign in with it

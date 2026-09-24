@@ -23,7 +23,8 @@ To put it online, see **[DEPLOY.md](DEPLOY.md)**.
   email, change password (signs out other devices), download all your data,
   delete your account.
 - **Globe home screen** — dark, high-contrast 3D globe. Visited countries in
-  blue, wishlist in amber. Tap any country to log it; search flies you there.
+  blue, wishlist in amber. Tap any country to log it; search (countries, cities
+  and towns, instant, on ORBIT's own data) flies you there.
 - **Drill-down zoom** — continents → countries → cities → towns (137,000+ places
   down to 1,000-person villages, bundled locally and loaded in stages).
 - **Logbook** — continents → countries → cities & towns, with counts. Logging
@@ -48,14 +49,13 @@ To put it online, see **[DEPLOY.md](DEPLOY.md)**.
 | `static/css/app.css` | all styling — desktop first, phone layout under `max-width: 720px` |
 | `static/data/` | Natural Earth country borders; GeoNames places split into `cities-1.json` (≥15k people) and `cities-2.json` (smaller towns) |
 | `data/activities.json` | curated destination shortlists for the planner |
-| `data/geonames-cities.json` | source for the city files (`scripts/split_cities.py`) |
+| `data/geonames-cities.json` | the place list city search runs on (`orbit/places.py`) and the source of the globe's city files; rebuilt by `scripts/build_places.py` |
 | `tests/` | pytest suite + `e2e/smoke.py` real-browser check at phone and desktop sizes |
 | `Dockerfile`, `render.yaml` | production image and one-click Render setup |
 
-Place data © [GeoNames](https://www.geonames.org/) (CC BY 4.0), borders ©
-[Natural Earth](https://www.naturalearthdata.com/), globe by
-[globe.gl](https://github.com/vasturiano/globe.gl), city search by
-[Open-Meteo](https://open-meteo.com/).
+Place data and city search © [GeoNames](https://www.geonames.org/) (CC BY 4.0),
+borders © [Natural Earth](https://www.naturalearthdata.com/), globe by
+[globe.gl](https://github.com/vasturiano/globe.gl), live places from Google Maps.
 
 ## What's next
 
