@@ -4,6 +4,7 @@ import os
 
 from flask import Blueprint, Response, current_app, jsonify, send_from_directory
 
+from .auth import current_user
 from .config import BASE_DIR
 from .db import get_db
 
@@ -17,10 +18,18 @@ def _no_cache(resp):
     return resp
 
 
+_shell = {}
+
+
 @bp.get("/")
 @bp.get("/reset")
 def index():
-    return _no_cache(send_from_directory(STATIC_DIR, "index.html"))
+    # link previews and canonical URLs need the public address baked in
+    url = current_app.config["APP_URL"]
+    if url not in _shell or not current_app.config["PRODUCTION"]:  # re-read while developing
+        with open(os.path.join(STATIC_DIR, "index.html"), encoding="utf-8") as f:
+            _shell[url] = f.read().replace("__APP_URL__", url)
+    return _no_cache(Response(_shell[url], mimetype="text/html"))
 
 
 @bp.get("/privacy")
@@ -68,4 +77,5 @@ def public_config():
     """What the signed-out page needs to know (e.g. whether to show Google sign-in)."""
     cfg = current_app.config
     return jsonify(google_client_id=cfg["GOOGLE_CLIENT_ID"],
-                   live_places=bool(cfg["GOOGLE_MAPS_API_KEY"]))
+                   live_places=bool(cfg["GOOGLE_MAPS_API_KEY"]),
+                   signed_in=current_user() is not None)

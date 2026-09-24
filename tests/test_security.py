@@ -74,7 +74,7 @@ def test_login_is_rate_limited(tmp_path):
 
 
 def test_static_caching(client):
-    assert client.get("/static/js/app.js").headers["Cache-Control"] == "no-cache"
+    assert client.get("/static/js/main.js").headers["Cache-Control"] == "no-cache"
     assert "max-age" in client.get("/static/data/countries.geojson").headers["Cache-Control"]
 
 

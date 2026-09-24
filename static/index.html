@@ -2,9 +2,27 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>ORBIT — your world, tracked</title>
-<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><circle cx='50' cy='50' r='42' fill='%233987e5'/><ellipse cx='50' cy='50' rx='42' ry='16' fill='none' stroke='%230d0d0d' stroke-width='6'/></svg>">
+<meta name="description" content="Track every country and city you've been to on a 3D globe, keep a dream list, compare maps with friends and plan your next trip.">
+<meta name="theme-color" content="#0d0d0d">
+<link rel="canonical" href="__APP_URL__/">
+<link rel="icon" href="/static/icons/icon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="/static/icons/apple-touch-icon.png">
+<link rel="manifest" href="/static/manifest.webmanifest">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="ORBIT">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="ORBIT">
+<meta property="og:title" content="ORBIT — your world, tracked">
+<meta property="og:description" content="Every country you've set foot in, on a 3D globe. Compare maps with friends and plan the next trip.">
+<meta property="og:url" content="__APP_URL__/">
+<meta property="og:image" content="__APP_URL__/static/icons/og-image.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta name="twitter:card" content="summary_large_image">
 <link rel="stylesheet" href="/static/css/app.css">
 </head>
 <body>
@@ -15,15 +33,33 @@
     <span class="brand-name">ORBIT</span>
     <span class="brand-tag">your world, tracked</span>
   </div>
-  <nav class="tabs" role="tablist">
-    <button class="tab active" data-view="globe">Globe</button>
-    <button class="tab" data-view="logbook">Logbook</button>
-    <button class="tab" data-view="wishlist">Wishlist</button>
-    <button class="tab" data-view="planner">Trip planner</button>
-    <button class="tab" data-view="trips">My trips</button>
-    <button class="tab" data-view="friends">Friends</button>
+  <nav class="tabs" aria-label="Sections">
+    <button class="tab active" data-view="globe">
+      <svg class="tab-icon" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><ellipse cx="12" cy="12" rx="4" ry="9"/><path d="M3 12h18"/></svg>
+      <span class="tab-long">Globe</span><span class="tab-short">Globe</span>
+    </button>
+    <button class="tab" data-view="logbook">
+      <svg class="tab-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 5a2 2 0 0 1 2-2h12v15H7a2 2 0 0 0-2 2V5z"/><path d="M5 20a2 2 0 0 0 2 1h12v-3"/></svg>
+      <span class="tab-long">Logbook</span><span class="tab-short">Log</span>
+    </button>
+    <button class="tab" data-view="wishlist">
+      <svg class="tab-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3l2.8 5.7 6.2.9-4.5 4.4 1.1 6.2L12 17.3l-5.6 2.9 1.1-6.2L3 9.6l6.2-.9z"/></svg>
+      <span class="tab-long">Wishlist</span><span class="tab-short">Dreams</span>
+    </button>
+    <button class="tab" data-view="planner">
+      <svg class="tab-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M9 4L3 6v14l6-2 6 2 6-2V4l-6 2-6-2z"/><path d="M9 4v14M15 6v14"/></svg>
+      <span class="tab-long">Trip planner</span><span class="tab-short">Plan</span>
+    </button>
+    <button class="tab" data-view="trips">
+      <svg class="tab-icon" viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="7" width="18" height="13" rx="2"/><path d="M8 7V5a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
+      <span class="tab-long">My trips</span><span class="tab-short">Trips</span>
+    </button>
+    <button class="tab" data-view="friends">
+      <svg class="tab-icon" viewBox="0 0 24 24" aria-hidden="true"><circle cx="9" cy="8" r="3.5"/><path d="M2.5 20a6.5 6.5 0 0 1 13 0"/><circle cx="17" cy="9" r="2.5"/><path d="M16 14.5a5 5 0 0 1 5.5 5"/></svg>
+      <span class="tab-long">Friends</span><span class="tab-short">Friends</span>
+    </button>
   </nav>
-  <button class="profile-chip" id="profileChip" title="Your share code — click to copy">
+  <button class="profile-chip" id="profileChip" title="Your account" aria-haspopup="dialog">
     <span class="avatar" id="avatarLetter">?</span>
     <span class="profile-meta">
       <span class="profile-name" id="profileName">…</span>
@@ -37,8 +73,8 @@
   <div id="globe"></div>
 
   <aside class="stats-rail" aria-label="Your travel stats">
-    <div class="stat-tile">
-      <span class="stat-label">Countries visited</span>
+    <div class="stat-tile stat-main">
+      <span class="stat-label">Countries<span class="stat-label-long"> visited</span></span>
       <span class="stat-value" id="statVisited">0</span>
       <div class="meter" title="Share of the world's countries">
         <div class="meter-fill" id="meterVisited"></div>
@@ -46,12 +82,12 @@
       <span class="stat-sub" id="statVisitedSub">of 177 countries</span>
     </div>
     <div class="stat-tile">
-      <span class="stat-label">World explored</span>
+      <span class="stat-label">World<span class="stat-label-long"> explored</span></span>
       <span class="stat-value" id="statPercent">0%</span>
     </div>
     <div class="stat-tile">
       <span class="stat-label">Continents</span>
-      <span class="stat-value" id="statContinents">0<span class="stat-of"> / 6</span></span>
+      <span class="stat-value" id="statContinents">0<span class="stat-of"> / 7</span></span>
     </div>
     <div class="stat-tile">
       <span class="stat-label">Dream list</span>
@@ -60,12 +96,12 @@
   </aside>
 
   <div class="globe-search">
-    <input id="countrySearch" type="text" placeholder="Fly to a country…" autocomplete="off" aria-label="Search countries">
+    <input id="countrySearch" type="search" placeholder="Fly to a country or city…" autocomplete="off" aria-label="Search countries and cities" enterkeyhint="go">
     <ul id="searchResults" class="search-results" hidden></ul>
   </div>
 
   <div class="compare-banner" id="compareBanner" hidden>
-    <span>Comparing with <strong id="compareName"></strong></span>
+    <span class="compare-title">Comparing with <strong id="compareName"></strong></span>
     <span class="legend-chip"><i class="dot dot-you"></i>Only you <b id="cmpYou">0</b></span>
     <span class="legend-chip"><i class="dot dot-both"></i>Both <b id="cmpBoth">0</b></span>
     <span class="legend-chip"><i class="dot dot-friend"></i>Only them <b id="cmpThem">0</b></span>
@@ -75,7 +111,7 @@
   <div class="globe-legend" id="globeLegend">
     <span class="legend-chip"><i class="dot dot-you"></i>Visited</span>
     <span class="legend-chip"><i class="dot dot-wish"></i>Wishlist</span>
-    <span class="legend-hint">Click a continent, zoom for countries &amp; cities</span>
+    <span class="legend-hint" id="legendHint">Click a continent, zoom for countries &amp; cities</span>
   </div>
 
   <div class="lod-pill" id="lodPill" role="group" aria-label="Detail level">
@@ -85,7 +121,7 @@
     <button data-mode="town">Towns</button>
   </div>
 
-  <div class="country-pop" id="countryPop" hidden>
+  <div class="country-pop" id="countryPop" role="dialog" aria-labelledby="popName" hidden>
     <div class="pop-head">
       <span class="pop-flag" id="popFlag"></span>
       <div>
@@ -102,10 +138,10 @@
 <main id="view-logbook" class="view">
   <div class="panel">
     <h1>Travel log</h1>
-    <p class="lede">Everywhere you've set foot — by continent, country, city and town. Click anything to fly there.</p>
+    <p class="lede">Everywhere you've set foot — by continent, country, city and town. Tap anything to fly there.</p>
     <div class="log-summary" id="logSummary"></div>
     <div id="logSections"></div>
-    <p class="empty" id="logEmpty">Nothing logged yet — click a country or town on the globe and hit "Been there".</p>
+    <p class="empty" id="logEmpty">Nothing logged yet — tap a country or town on the globe and hit "Been there".</p>
   </div>
 </main>
 
@@ -115,7 +151,7 @@
     <h1>Dream list</h1>
     <p class="lede">Places you're going to get to. Add a city, an island, a whole country — then let the planner build you a shortlist.</p>
     <form class="add-row" id="wishForm">
-      <input id="wishInput" type="text" placeholder="e.g. Crete, Greece" maxlength="80" autocomplete="off">
+      <input id="wishInput" type="text" placeholder="e.g. Crete, Greece" maxlength="80" autocomplete="off" enterkeyhint="done">
       <button class="btn btn-primary" type="submit">Add to wishlist</button>
     </form>
     <ul class="wish-list" id="wishList"></ul>
@@ -135,18 +171,18 @@
         <div class="share-code" id="bigShareCode">——————</div>
       </div>
       <span class="row-actions">
-        <button class="btn btn-primary" id="copyCode">Copy code</button>
-        <button class="btn btn-ghost" id="switchProfile" title="Log in as a different traveller">Switch traveller</button>
+        <button class="btn btn-primary" id="shareInvite">Share invite</button>
+        <button class="btn btn-ghost" id="copyCode">Copy code</button>
       </span>
     </div>
 
     <form class="add-row" id="friendForm">
-      <input id="friendInput" type="text" placeholder="Enter a friend's code, e.g. K7MRQ2" maxlength="6" autocomplete="off" style="text-transform:uppercase">
+      <input id="friendInput" class="code-input" type="text" placeholder="Friend's code, e.g. K7MRQ2" maxlength="6" autocomplete="off" autocapitalize="characters" spellcheck="false">
       <button class="btn btn-primary" type="submit">Add friend</button>
     </form>
 
     <ul class="friend-list" id="friendList"></ul>
-    <p class="empty" id="friendEmpty">No friends yet — send someone your code.</p>
+    <p class="empty" id="friendEmpty">No friends yet — send someone your invite link.</p>
   </div>
 </main>
 
@@ -160,9 +196,9 @@
       <span id="planWithText"></span>
       <button class="pop-close" id="planWithCancel" aria-label="Cancel planning together">×</button>
     </div>
-    <form class="add-row" id="planForm">
-      <input id="planInput" type="text" placeholder="Where to? e.g. Crete, Greece" maxlength="80" autocomplete="off">
-      <select id="planRadius" class="radius-select" title="How far from the centre results can be">
+    <form class="add-row plan-row" id="planForm">
+      <input id="planInput" type="text" placeholder="Where to? e.g. Crete, Greece" maxlength="80" autocomplete="off" enterkeyhint="search">
+      <select id="planRadius" class="radius-select" title="How far from the centre results can be" aria-label="Search radius">
         <option value="5">within 5 km</option>
         <option value="15" selected>within 15 km</option>
         <option value="30">within 30 km</option>
@@ -188,6 +224,7 @@
         <span class="itin-badge" id="itinBadge"></span>
       </div>
       <p class="lede" id="itinTagline"></p>
+      <p class="itin-note" id="itinNote" hidden></p>
       <div class="save-bar" id="saveBar">
         <span id="saveCount" class="save-count"></span>
         <button class="btn btn-primary" id="saveTrip">Save as planned trip</button>
@@ -218,10 +255,12 @@
       <div class="travel-card">
         <div class="travel-line" id="travelSummary">Add your flight and dates — anything closed while you're there gets flagged.</div>
         <form class="travel-form" id="travelForm">
-          <input id="tripFlight" type="text" placeholder="Flight, e.g. FR1234" maxlength="8" autocomplete="off">
-          <input id="tripStart" type="date" aria-label="Arriving">
-          <span class="date-arrow">→</span>
-          <input id="tripEnd" type="date" aria-label="Leaving">
+          <input id="tripFlight" type="text" placeholder="Flight, e.g. FR1234" maxlength="8" autocomplete="off" autocapitalize="characters">
+          <span class="travel-dates">
+            <input id="tripStart" type="date" aria-label="Arriving">
+            <span class="date-arrow">→</span>
+            <input id="tripEnd" type="date" aria-label="Leaving">
+          </span>
           <button class="btn btn-sm btn-primary" type="submit">Save details</button>
         </form>
       </div>
@@ -230,23 +269,103 @@
   </div>
 </main>
 
-<!-- ═══ ONBOARDING ═══ -->
-<div class="overlay" id="onboard" hidden>
-  <div class="onboard-card">
+<!-- ═══ SIGN IN / SIGN UP ═══ -->
+<div class="overlay" id="authOverlay" hidden>
+  <div class="onboard-card auth-card">
     <span class="brand-mark big" aria-hidden="true"></span>
     <h1>ORBIT</h1>
-    <p>Track every country you've set foot in, show it off on a globe,<br>compare with friends and plan the next one.</p>
-    <form id="onboardForm">
-      <input id="onboardName" type="text" placeholder="What should we call you?" maxlength="24" autocomplete="off">
-      <button class="btn btn-primary btn-lg" type="submit">Start exploring</button>
+    <p class="auth-pitch" id="authPitch">Track every country you've set foot in, show it off on a globe, compare with friends and plan the next one.</p>
+    <div class="auth-tabs" id="authTabs" role="tablist">
+      <button type="button" role="tab" data-auth="signup" class="active">Create account</button>
+      <button type="button" role="tab" data-auth="login">Sign in</button>
+    </div>
+    <div id="googleWrap" hidden>
+      <div id="googleBtn" class="google-btn"></div>
+      <div class="auth-or"><span>or</span></div>
+    </div>
+    <form id="authForm" novalidate>
+      <input id="authName" type="text" placeholder="What should we call you?" maxlength="24" autocomplete="nickname">
+      <input id="authEmail" type="email" placeholder="Email" maxlength="254" autocomplete="email" inputmode="email">
+      <input id="authPassword" type="password" placeholder="Password (8+ characters)" maxlength="200" autocomplete="new-password">
+      <button class="btn btn-primary btn-lg" type="submit" id="authSubmit">Create account</button>
     </form>
-    <p class="onboard-note">Already have a profile on this device's server? Enter the same name to pick it back up.</p>
+    <p class="auth-error" id="authError" role="alert" hidden></p>
+    <button type="button" class="link-btn" id="forgotLink" hidden>Forgot your password?</button>
+    <button type="button" class="link-btn" id="backToLogin" hidden>← Back to sign in</button>
+    <p class="auth-legal" id="authLegal">By creating an account you agree to the <a href="/terms" target="_blank">Terms</a> and <a href="/privacy" target="_blank">Privacy Policy</a>.</p>
   </div>
 </div>
 
-<div class="toast" id="toast" hidden></div>
+<!-- ═══ ACCOUNT ═══ -->
+<div class="overlay sheet-overlay" id="accountOverlay" hidden>
+  <div class="sheet" role="dialog" aria-modal="true" aria-labelledby="accountTitle">
+    <div class="sheet-head">
+      <span class="avatar avatar-lg" id="accountAvatar">?</span>
+      <div>
+        <h2 id="accountTitle">Your account</h2>
+        <div class="sheet-sub" id="accountEmail"></div>
+      </div>
+      <span class="plan-badge" id="planBadge">Free</span>
+      <button class="pop-close" id="accountClose" aria-label="Close">×</button>
+    </div>
+
+    <section class="sheet-section">
+      <span class="stat-label">Share code</span>
+      <div class="sheet-row">
+        <span class="share-code share-code-sm" id="accountCode">——————</span>
+        <span class="row-actions">
+          <button class="btn btn-ghost btn-sm" id="accountShare">Share</button>
+          <button class="btn btn-ghost btn-sm" id="accountRotate" title="Get a new code if yours leaked — existing friends stay">New code</button>
+        </span>
+      </div>
+    </section>
+
+    <form class="sheet-section" id="nameForm">
+      <label class="stat-label" for="accountName">Display name</label>
+      <div class="sheet-row">
+        <input id="accountName" type="text" maxlength="24" autocomplete="nickname">
+        <button class="btn btn-ghost btn-sm" type="submit">Save</button>
+      </div>
+    </form>
+
+    <form class="sheet-section" id="passwordForm">
+      <span class="stat-label" id="passwordLabel">Change password</span>
+      <input id="currentPassword" type="password" placeholder="Current password" autocomplete="current-password">
+      <div class="sheet-row">
+        <input id="newPassword" type="password" placeholder="New password (8+ characters)" autocomplete="new-password">
+        <button class="btn btn-ghost btn-sm" type="submit">Save</button>
+      </div>
+    </form>
+
+    <section class="sheet-section sheet-actions">
+      <a class="btn btn-ghost btn-sm" href="/api/account/export" download>Download my data</a>
+      <button class="btn btn-ghost btn-sm" id="installApp" hidden>Install app</button>
+      <button class="btn btn-ghost btn-sm" id="signOut">Sign out</button>
+    </section>
+
+    <details class="sheet-section danger-zone">
+      <summary>Delete account</summary>
+      <p>This permanently deletes your map, lists, trips and friendships. Trips you own are deleted for everyone on them.</p>
+      <form id="deleteForm">
+        <input id="deletePassword" type="password" placeholder="Your password" autocomplete="current-password">
+        <input id="deleteConfirm" type="text" placeholder="Type DELETE to confirm" autocomplete="off" autocapitalize="characters">
+        <button class="btn btn-danger-solid btn-sm" type="submit">Delete my account forever</button>
+      </form>
+    </details>
+
+    <p class="attrib">
+      <a href="/privacy" target="_blank">Privacy</a> · <a href="/terms" target="_blank">Terms</a><br>
+      Places © <a href="https://www.geonames.org/" target="_blank" rel="noopener">GeoNames</a> (CC BY 4.0) ·
+      Borders © <a href="https://www.naturalearthdata.com/" target="_blank" rel="noopener">Natural Earth</a> ·
+      Globe by <a href="https://github.com/vasturiano/globe.gl" target="_blank" rel="noopener">globe.gl</a> ·
+      Geocoding by <a href="https://open-meteo.com/" target="_blank" rel="noopener">Open-Meteo</a>
+    </p>
+  </div>
+</div>
+
+<div class="toast" id="toast" role="status" aria-live="polite" hidden></div>
 
 <script src="/static/vendor/globe.gl.min.js"></script>
-<script src="/static/js/app.js"></script>
+<script type="module" src="/static/js/main.js"></script>
 </body>
 </html>
