@@ -1,10 +1,22 @@
+# local databases
 traveltracker.db
+*.db-wal
+*.db-shm
 Visited_Places.DB
+
+# secrets
+config.json
+.env
+
+# python
 __pycache__/
 *.pyc
+.venv/
+.pytest_cache/
 
-config.json
+# precompressed static files (made during the Docker build)
+static/**/*.gz
+static/**/*.br
+
 *.bak
 node_modules/
-
-README.md/
