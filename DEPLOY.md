@@ -30,14 +30,17 @@ service → Settings → Custom Domains → add `yourdomain.com`, create the DNS
 record it shows you, then change `APP_URL` to `https://yourdomain.com`.
 HTTPS certificates are automatic.
 
-## 2. Fill in the legal pages
+## 2. Check the legal pages still match
 
-`/privacy` and `/terms` are **starting templates** —
-`static/legal/privacy.html` and `static/legal/terms.html`. Replace every
-`[BRACKETED]` part (your name or company, contact email, host region, governing
-law, refund terms), have them checked, and delete the yellow "Draft template"
-notes. You need them before inviting the public, and Google sign-in needs
-their URLs.
+`/privacy` and `/terms` (`static/legal/`) describe ORBIT as it runs today:
+hosted on Render in Frankfurt, emails through Resend, city search through
+Open-Meteo, no Google sign-in, accounts deleted after 3 months without use.
+If you change any of that, update the pages too (each has a comment listing
+what to watch). It's worth having them checked by someone qualified.
+
+Also check with the ICO whether you need to pay the data protection fee
+(ico.org.uk has a short self-assessment). Most people running a service like
+this from the UK do.
 
 ## 3. "Continue with Google" (optional, free)
 
@@ -52,6 +55,9 @@ their URLs.
    No redirect URI is needed.
 4. Copy the **Client ID** into Render as `GOOGLE_CLIENT_ID`. The button appears
    on the sign-in card automatically.
+5. Update the privacy policy. With Google sign-in on, the sign-in screen loads
+   Google's script, so Google receives visitors' IP addresses and may set
+   cookies. Say so in the "Services we use" and "Cookies" sections.
 
 ## 4. Live Google Maps results in the planner (optional, pay-per-use)
 
@@ -74,9 +80,12 @@ one, it shows live top-rated places.
      Billing.
 4. Put the key in Render as `GOOGLE_MAPS_API_KEY`.
 
-## 5. Password-reset emails (needed before launch)
+## 5. Emails (needed before launch)
 
-Without an email service, "Forgot your password?" can't reach anyone.
+ORBIT sends two kinds of email: password resets, and a warning a week before
+deleting an account that hasn't been used for 3 months. Without an email
+service, "Forgot your password?" can't reach anyone, and unused accounts are
+never deleted, because ORBIT won't delete an account without warning its owner first.
 [Resend](https://resend.com) has a free tier that covers a small app.
 
 1. Create a Resend account → **Domains → Add domain** → add the DNS records it
@@ -101,6 +110,7 @@ Locally, with no key, the reset link is printed in the server log instead.
 | `PLACES_FREE_DAILY` / `PLACES_PRO_DAILY` | optional | Live shortlists per user per day (default 3 / 40) |
 | `PLACES_GLOBAL_DAILY_CAP` | optional | Site-wide live shortlists per day (default 300) |
 | `TRUST_PROXY` | optional | Trust one proxy's `X-Forwarded-*` headers (on by default in production) |
+| `ACCOUNT_INACTIVE_DAYS` | optional | Delete accounts unused for this many days (default 90, `0` = never). A warning email goes out a week before |
 | `RATELIMIT_ENABLED` | optional | Set `0` only for local testing |
 
 ## Running it locally

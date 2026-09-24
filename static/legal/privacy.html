@@ -12,80 +12,122 @@
 <main>
   <a class="back" href="/"><img src="/static/icons/icon-192.png" alt="">ORBIT</a>
   <h1>Privacy Policy</h1>
-  <p class="updated">Last updated: [DATE]</p>
+  <p class="updated">Last updated: 24 September 2026</p>
 
-  <!-- TEMPLATE: replace every [BRACKETED] part, check it matches how you actually
-       run ORBIT, have it reviewed, then delete this note and the one below. -->
-  <p class="draft-note">Draft template — the owner of this site must fill in the bracketed details and have this policy reviewed before launch.</p>
+  <!-- Keep this in step with how ORBIT actually runs. In particular, update it if you:
+       turn on Google sign-in (GOOGLE_CLIENT_ID: Google then receives visitors' IP addresses
+       and may set cookies on the sign-in screen), add analytics, change host or region, or
+       add payments (Stripe). Have it checked by someone qualified before relying on it. -->
 
-  <p>ORBIT is run by [YOUR NAME OR COMPANY] ("we", "us"). This policy explains what we
-  collect when you use ORBIT, why, who can see it, and the choices you have. Questions:
-  [CONTACT EMAIL].</p>
+  <p>ORBIT is run by IIRyzII, based in England ("we", "us"). We decide how your personal data is
+  used, which makes us its "controller" under UK data protection law. This policy explains what
+  we collect, why, who can see it and the choices you have.
+  Questions or requests: <a href="mailto:ryleycodes@gmail.com">ryleycodes@gmail.com</a>.</p>
 
-  <h2>What we collect</h2>
+  <h2>What we collect and why</h2>
   <table>
-    <tr><th>What</th><th>Why</th></tr>
-    <tr><td>Your email address, display name and a scrambled (hashed) copy of your password — or, if you use Google sign-in, your Google account ID and email</td>
-        <td>To create your account and sign you in</td></tr>
-    <tr><td>The travel data you add: countries, cities and towns you've visited, your wishlist, saved trips, flight numbers and dates</td>
-        <td>That's the service — showing and planning your travels</td></tr>
+    <tr><th>What</th><th>Why</th><th>Legal basis</th></tr>
+    <tr><td>Your email address, display name, and a scrambled (hashed) copy of your password</td>
+        <td>To create your account, sign you in, and email you about your account (password resets,
+        and a warning before an unused account is deleted)</td>
+        <td>Contract</td></tr>
+    <tr><td>The travel data you add: countries, cities and towns you've visited, your wishlist, saved
+        trips, flight numbers and travel dates</td>
+        <td>That's the service — showing and planning your travels</td>
+        <td>Contract</td></tr>
     <tr><td>Your friends list and the trips you share</td>
-        <td>So friends can compare maps and plan trips together</td></tr>
-    <tr><td>A count of how many live Google Maps lookups you run each day</td>
-        <td>To keep the service's costs under control and enforce plan limits</td></tr>
-    <tr><td>Technical data: IP address, browser type and request logs</td>
-        <td>Security, preventing abuse (e.g. rate limiting), fixing problems. Logs are kept for [14] days.</td></tr>
+        <td>So friends can compare maps and plan trips together</td>
+        <td>Contract</td></tr>
+    <tr><td>When you last used ORBIT</td>
+        <td>To delete accounts that haven't been used for 3 months (see below)</td>
+        <td>Legitimate interests</td></tr>
+    <tr><td>A count of how many live place lookups you run each day</td>
+        <td>To keep the service's costs under control</td>
+        <td>Legitimate interests</td></tr>
+    <tr><td>Technical data: your IP address and browser details in our server logs</td>
+        <td>Security, preventing abuse (such as limiting repeated sign-in attempts) and fixing problems</td>
+        <td>Legitimate interests</td></tr>
   </table>
-  <p>Our legal bases are performing our contract with you (providing ORBIT) and our legitimate
-  interests in keeping ORBIT secure and working.</p>
+  <p>"Contract" means we need the data to provide ORBIT to you. "Legitimate interests" means we
+  use it to keep ORBIT secure, working and affordable, in ways you'd reasonably expect.</p>
 
   <h2>Who can see your data</h2>
   <ul>
-    <li><strong>Friends you add</strong> with a share code can see your visited countries, the number
-      of countries you've been to, and your display name.</li>
-    <li><strong>People on a trip</strong> you share can see that trip.</li>
-    <li>Nobody else. We don't sell your data, show ads, or use advertising trackers.</li>
+    <li><strong>Anyone you give your share code or invite link to.</strong> Using your code makes them
+      your friend straight away, with no approval step. Friends can see your display name, the
+      countries you've visited and how many countries you've been to. They can't see your email,
+      cities, wishlist or trips. Only share your code with people you're happy to see your map.
+      You can remove a friend, or get a new code, at any time.</li>
+    <li><strong>People on a trip</strong> can see that trip and the display names of everyone on it.</li>
+    <li>We never show your email address to other users. Nobody else can see your data. We don't
+      sell it, we don't show ads and we don't use advertising or analytics trackers.</li>
   </ul>
 
   <h2>Services we use</h2>
+  <p>These companies process data for us, only to provide ORBIT:</p>
   <ul>
-    <li><strong>Hosting</strong> — [HOSTING PROVIDER, e.g. Render], which stores the database in [REGION].</li>
-    <li><strong>Email</strong> — Resend, only to send password-reset emails.</li>
-    <li><strong>Google</strong> — if you choose Google sign-in; and Google Maps (Places API) receives the
-      destination names you search in the Trip planner (not who you are).</li>
-    <li><strong>Open-Meteo</strong> — receives the place names you type into search, to find cities.</li>
+    <li><strong>Render</strong> hosts ORBIT. Our database is stored in Frankfurt, Germany.</li>
+    <li><strong>Resend</strong> sends our emails: password resets and inactivity warnings. It receives
+      your email address and the message.</li>
+    <li><strong>Open-Meteo</strong> receives the place names you type into search, to find cities.
+      Our server sends the search, so Open-Meteo doesn't receive your IP address or who you are.</li>
+    <li><strong>Google Maps</strong>: if live place results are switched on, Google receives the
+      destination names you search in the Trip planner. As with Open-Meteo, our server makes the
+      request, so Google doesn't learn who you are.</li>
   </ul>
-  <p>[If any provider stores data outside the UK/EEA, say so here and name the safeguard, e.g. the
-  UK International Data Transfer Addendum or EU Standard Contractual Clauses.]</p>
 
-  <h2>Cookies and storage</h2>
-  <p>ORBIT uses one essential cookie, <code>orbit_session</code>, to keep you signed in. It's
-  strictly necessary, so there's no cookie banner. Your browser also stores a note that you've
-  visited before (to show "Sign in" first) and, briefly, a friend's invite code while you sign up.
-  We don't use analytics or advertising cookies.</p>
+  <h2>International transfers</h2>
+  <p>Render and Resend are US companies and Google operates worldwide, so some data may be accessed
+  from, or sent to, countries outside the UK. When that happens we rely on the safeguards in each
+  provider's data processing terms, such as the UK International Data Transfer Addendum or the UK
+  Extension to the EU–US Data Privacy Framework.</p>
+
+  <h2>Cookies and storage on your device</h2>
+  <ul>
+    <li>One cookie, <code>orbit_session</code>, keeps you signed in.</li>
+    <li>Your browser remembers that you've signed in on this device before, so we show "Sign in" first.</li>
+    <li>If you open a friend's invite link, their code is kept until you finish signing up.</li>
+    <li>A copy of ORBIT's app files is saved so it loads quickly and works offline.</li>
+  </ul>
+  <p>These are needed to provide the features you use, so we don't show a cookie banner. We don't
+  use analytics or advertising cookies.</p>
 
   <h2>How long we keep it</h2>
-  <p>We keep your data while you have an account. When you delete your account (Account →
-  Delete account) it is removed from our live database straight away and from backups within
-  [7] days.</p>
+  <ul>
+    <li><strong>While you use ORBIT</strong>, we keep your data.</li>
+    <li><strong>If you don't use ORBIT for 3 months</strong>, we delete your account and all its data.
+      We email you a week beforehand. Signing in before then keeps your account.</li>
+    <li><strong>When you delete your account</strong> (Account → Delete account), it's removed from our
+      database straight away and from our backups within 7 days. Trips you own are deleted for
+      everyone on them. Your votes and places on other people's trips are removed.</li>
+    <li><strong>Server logs</strong> are kept for up to 30 days.</li>
+  </ul>
+
+  <h2>How we protect it</h2>
+  <p>Passwords are stored only as secure hashes, never in readable form. All traffic uses HTTPS.
+  Every request is checked so you can only reach your own data and the trips you're on. Changing
+  your password signs you out on every other device.</p>
 
   <h2>Your rights</h2>
   <ul>
-    <li><strong>Access / portability</strong> — Account → Download my data gives you everything as a file.</li>
-    <li><strong>Correction</strong> — edit your name, lists and trips at any time.</li>
-    <li><strong>Deletion</strong> — Account → Delete account.</li>
-    <li>You can also object to or ask us to restrict processing by emailing [CONTACT EMAIL].</li>
+    <li><strong>Access and portability</strong>: Account → Download my data gives you everything as a file.</li>
+    <li><strong>Correction</strong>: you can edit your name, lists and trips at any time.</li>
+    <li><strong>Deletion</strong>: Account → Delete account.</li>
+    <li><strong>Objection and restriction</strong>: email us to object to, or ask us to limit, how we
+      use your data.</li>
   </ul>
-  <p>If you're unhappy with how we handle your data you can complain to the
-  <a href="https://ico.org.uk/make-a-complaint/">Information Commissioner's Office</a> (UK) or your
-  local data protection authority.</p>
+  <p>We'll reply to requests within one month. We don't make automated decisions about you that
+  have legal or similarly significant effects. If you're unhappy with how we handle your data you
+  can complain to the <a href="https://ico.org.uk/make-a-complaint/">Information Commissioner's
+  Office</a>.</p>
 
   <h2>Children</h2>
-  <p>ORBIT isn't meant for children under 13, and we don't knowingly collect their data.</p>
+  <p>You must be 13 or over to use ORBIT. If we find out that someone under 13 has an account, we'll
+  delete it.</p>
 
   <h2>Changes</h2>
-  <p>If we change this policy we'll update the date above, and tell you in the app if the
-  change is significant.</p>
+  <p>If we change this policy we'll update the date at the top. If the change is significant, we'll
+  tell you in the app or by email first.</p>
 </main>
 </body>
 </html>

@@ -130,7 +130,21 @@ def migrate_2(db):
     db.execute("PRAGMA foreign_keys = ON")
 
 
-MIGRATIONS = [migrate_1, migrate_2]
+def migrate_3(db):
+    """Inactive-account clean-up: when each account was last used, and when we
+    emailed a deletion warning. Existing accounts start their clock now."""
+    db.executescript("""
+    BEGIN;
+    ALTER TABLE users ADD COLUMN last_active_at TEXT;
+    ALTER TABLE users ADD COLUMN deletion_warned_at TEXT;
+    UPDATE users SET last_active_at = CURRENT_TIMESTAMP;
+    CREATE INDEX idx_users_last_active ON users(last_active_at);
+    PRAGMA user_version = 3;
+    COMMIT;
+    """)
+
+
+MIGRATIONS = [migrate_1, migrate_2, migrate_3]
 
 
 def connect(path):

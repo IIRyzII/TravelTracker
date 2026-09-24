@@ -7,6 +7,7 @@ import re
 import secrets
 import urllib.error
 import urllib.request
+from datetime import datetime, timedelta, timezone
 
 from flask import Blueprint, current_app, g, jsonify, session
 from itsdangerous import BadSignature, SignatureExpired, URLSafeTimedSerializer
@@ -36,6 +37,7 @@ def current_user():
             # a password change bumps auth_version, which signs out other sessions
             if row and row["auth_version"] == session.get("av"):
                 g.user = row
+                touch_activity(row)
             else:
                 session.clear()
     return g.user
@@ -58,6 +60,25 @@ def login_user(user):
     session["uid"] = user["id"]
     session["av"] = user["auth_version"]
     g.user = user
+    touch_activity(user)
+
+
+TIMESTAMP = "%Y-%m-%d %H:%M:%S"  # SQLite's CURRENT_TIMESTAMP format (UTC)
+
+
+def utc_stamp(when):
+    return when.strftime(TIMESTAMP)
+
+
+def touch_activity(user):
+    """Record that the account is in use (at most one write a day). Using ORBIT
+    also cancels a pending inactivity deletion."""
+    day_ago = utc_stamp(datetime.now(timezone.utc) - timedelta(days=1))
+    if user["deletion_warned_at"] or not user["last_active_at"] or user["last_active_at"] < day_ago:
+        db = get_db()
+        db.execute("UPDATE users SET last_active_at=CURRENT_TIMESTAMP, deletion_warned_at=NULL "
+                   "WHERE id=?", (user["id"],))
+        db.commit()
 
 
 def new_share_code(db):
@@ -70,8 +91,8 @@ def new_share_code(db):
 
 def create_user(db, username, email=None, password=None, google_sub=None):
     cur = db.execute(
-        "INSERT INTO users(username, email, password_hash, google_sub, share_code) "
-        "VALUES(?,?,?,?,?)",
+        "INSERT INTO users(username, email, password_hash, google_sub, share_code, last_active_at) "
+        "VALUES(?,?,?,?,?,CURRENT_TIMESTAMP)",
         (username, email, generate_password_hash(password) if password else None,
          google_sub, new_share_code(db)),
     )

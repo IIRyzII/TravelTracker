@@ -74,9 +74,11 @@ def test_migrates_a_pre_accounts_database(tmp_path):
 
     app = create_app({"DATABASE_PATH": str(path), "RATELIMIT_ENABLED": False})
     db = sqlite3.connect(path)
-    assert db.execute("PRAGMA user_version").fetchone()[0] == 2
+    assert db.execute("PRAGMA user_version").fetchone()[0] == 3
     row = db.execute("SELECT username, share_code, email, plan, auth_version FROM users").fetchone()
     assert row == ("Ryley", "ABC234", None, "free", 1)
+    # old accounts start the inactivity clock at the upgrade, not at 0
+    assert db.execute("SELECT last_active_at FROM users").fetchone()[0] is not None
     cols = {r[1] for r in db.execute("PRAGMA table_info(trips)")}
     assert {"flight_number", "start_date", "end_date"} <= cols
     assert db.execute("PRAGMA foreign_key_check").fetchall() == []

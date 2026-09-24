@@ -1,12 +1,15 @@
 """Your account: name and password changes, data export, deletion."""
 
 import json
+import threading
+import time
+from datetime import datetime, timedelta, timezone
 
 import click
 from flask import Blueprint, Response, current_app, jsonify, session
 from werkzeug.security import check_password_hash, generate_password_hash
 
-from .auth import EMAIL_RE, login_required, login_user, password_problem
+from .auth import EMAIL_RE, login_required, login_user, password_problem, send_email, utc_stamp
 from .db import connect, get_db
 from .payloads import user_payload
 from .trips import purge_trip
@@ -97,6 +100,83 @@ def delete_user(db, uid):
     db.commit()
 
 
+WARNING_DAYS = 7  # the deletion warning goes out this long before
+
+
+def purge_inactive(db, now=None):
+    """Warn, then delete, accounts nobody has used for ACCOUNT_INACTIVE_DAYS.
+
+    An account is only deleted once a warning email has actually been sent,
+    at least WARNING_DAYS earlier. Signing in again cancels it
+    (auth.touch_activity)."""
+    days = current_app.config["ACCOUNT_INACTIVE_DAYS"]
+    if days <= 0:
+        return {"warned": 0, "deleted": 0}
+    now = now or datetime.now(timezone.utc)
+    warned = deleted = 0
+    stale = db.execute(
+        "SELECT * FROM users WHERE last_active_at < ? AND deletion_warned_at IS NULL",
+        (utc_stamp(now - timedelta(days=days - WARNING_DAYS)),)).fetchall()
+    for user in stale:
+        last = datetime.strptime(user["last_active_at"], "%Y-%m-%d %H:%M:%S").replace(tzinfo=timezone.utc)
+        goes = max(last + timedelta(days=days), now + timedelta(days=WARNING_DAYS))
+        if user["email"]:
+            sent = send_email(
+                user["email"], "Your ORBIT account will be deleted soon",
+                f"Hi {user['username']},\n\nYou haven't used ORBIT for a while, so your "
+                f"account and travel map will be deleted on {goes.day} {goes:%B %Y}.\n\n"
+                f"To keep them, just sign in before then:\n{current_app.config['APP_URL']}\n\n"
+                "If you're happy for it to go, you don't need to do anything.")
+            if not sent:
+                continue  # no warning, no deletion (e.g. email isn't set up yet)
+        db.execute("UPDATE users SET deletion_warned_at=? WHERE id=?", (utc_stamp(now), user["id"]))
+        warned += 1
+    db.commit()
+    for (uid,) in db.execute(
+            "SELECT id FROM users WHERE last_active_at < ? AND deletion_warned_at <= ?",
+            (utc_stamp(now - timedelta(days=days)),
+             utc_stamp(now - timedelta(days=WARNING_DAYS)))).fetchall():
+        delete_user(db, uid)
+        deleted += 1
+    return {"warned": warned, "deleted": deleted}
+
+
+_next_purge = [0.0]
+_purge_lock = threading.Lock()
+
+
+def schedule_purge(app):
+    """Run purge_inactive at most once a day, off the request thread."""
+    if app.config["ACCOUNT_INACTIVE_DAYS"] <= 0 or app.config.get("TESTING"):
+        return
+    with _purge_lock:
+        if time.time() < _next_purge[0]:
+            return
+        _next_purge[0] = time.time() + 24 * 3600
+
+    def job():
+        with app.app_context():
+            db = connect(app.config["DATABASE_PATH"])
+            try:
+                result = purge_inactive(db)
+                if result["warned"] or result["deleted"]:
+                    app.logger.info("Inactive accounts: %s", result)
+            except Exception:
+                app.logger.exception("Inactive-account clean-up failed")
+            finally:
+                db.close()
+
+    threading.Thread(target=job, daemon=True).start()
+
+
+@bp.cli.command("purge-inactive")
+def purge_inactive_command():
+    """Warn / delete accounts unused for ACCOUNT_INACTIVE_DAYS (also runs daily by itself)."""
+    db = connect(current_app.config["DATABASE_PATH"])
+    click.echo(purge_inactive(db))
+    db.close()
+
+
 @bp.delete("/api/account")
 @login_required
 @limiter.limit("10/hour", key_func=user_or_ip)
@@ -131,7 +211,8 @@ def claim_profile(username, email, password):
         raise click.ClickException(f"Found {len(rows)} profiles called {username!r} — need exactly one.")
     if db.execute("SELECT 1 FROM users WHERE email=? AND id<>?", (email, rows[0]["id"])).fetchone():
         raise click.ClickException("Another account already uses that email.")
-    db.execute("UPDATE users SET email=?, password_hash=?, auth_version=auth_version+1 WHERE id=?",
+    db.execute("UPDATE users SET email=?, password_hash=?, auth_version=auth_version+1, "
+               "last_active_at=CURRENT_TIMESTAMP, deletion_warned_at=NULL WHERE id=?",
                (email, generate_password_hash(password), rows[0]["id"]))
     db.commit()
     db.close()

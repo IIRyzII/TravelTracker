@@ -66,6 +66,10 @@ def create_app(overrides=None):
         app.register_blueprint(module.bp)
 
     @app.before_request
+    def housekeeping():
+        account.schedule_purge(app)  # daily inactive-account clean-up
+
+    @app.before_request
     def guard_writes():
         """Block cross-site writes: JSON only, from our own origin."""
         if request.method not in UNSAFE_METHODS or not request.path.startswith("/api/"):

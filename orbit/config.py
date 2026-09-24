@@ -54,6 +54,9 @@ def load_config():
         "PLACES_FREE_DAILY": _int("PLACES_FREE_DAILY", 3),
         "PLACES_PRO_DAILY": _int("PLACES_PRO_DAILY", 40),
         "PLACES_GLOBAL_DAILY_CAP": _int("PLACES_GLOBAL_DAILY_CAP", 300),
+        # accounts nobody signs in to for this long are deleted (0 = never);
+        # a warning email goes out a week before
+        "ACCOUNT_INACTIVE_DAYS": _int("ACCOUNT_INACTIVE_DAYS", 90),
         "SESSION_COOKIE_NAME": "orbit_session",
         "SESSION_COOKIE_HTTPONLY": True,
         "SESSION_COOKIE_SAMESITE": "Lax",
