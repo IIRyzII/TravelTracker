@@ -4,6 +4,7 @@ create_app() wires config, the database, security headers and the blueprints.
 """
 
 import hashlib
+import logging
 import os
 import threading
 from urllib.parse import urlsplit
@@ -13,7 +14,7 @@ from werkzeug.exceptions import HTTPException
 from werkzeug.middleware.proxy_fix import ProxyFix
 from whitenoise import WhiteNoise
 
-from . import account, auth, pages, places, planner, social, travel, trips
+from . import account, auth, pages, placedb, places, planner, social, travel, trips
 from .config import BASE_DIR, load_config
 from .db import close_db, init_db
 from .util import limiter
@@ -61,6 +62,7 @@ def create_app(overrides=None):
     app = Flask(__name__, static_folder=None)
     app.config.update(load_config())
     app.config["DATA_VERSION"] = data_version()
+    app.logger.setLevel(logging.INFO)  # so background jobs' progress shows in the host's logs
     if overrides:
         app.config.update(overrides)
 
@@ -72,9 +74,15 @@ def create_app(overrides=None):
     )
 
     init_db(app.config["DATABASE_PATH"])
-    if not app.config.get("TESTING"):
-        # build the city-search index now rather than on the first search
-        threading.Thread(target=places.index, daemon=True).start()
+    app.cli.add_command(placedb.build_places_command)
+    # background work belongs to the web server, not one-off `flask …` commands
+    serving = not app.config.get("TESTING") and os.environ.get("FLASK_RUN_FROM_CLI") != "true"
+    if serving:
+        if app.config["PLACES_AUTO_BUILD"]:
+            placedb.build_in_background(app)  # no-op once the places database exists
+        if not os.path.exists(app.config["PLACES_DB_PATH"]):
+            # build the bundled-list search index now rather than on the first search
+            threading.Thread(target=places.index, daemon=True).start()
     app.teardown_appcontext(close_db)
     limiter.init_app(app)
 

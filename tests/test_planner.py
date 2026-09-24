@@ -60,9 +60,10 @@ def test_saved_trips_keep_only_what_google_allows(app, make_user, live):
     assert curated["detail"] == "ORBIT's curated text" and not curated["from_google"]
 
 
-def test_geocoding_uses_local_places():
-    assert planner.geocode_place("Chania, Greece") == pytest.approx((35.511, 24.029), abs=0.01)
-    assert planner.geocode_place("Nowhere-at-all-ville") is None
+def test_geocoding_uses_local_places(app):
+    with app.app_context():
+        assert planner.geocode_place("Chania, Greece") == pytest.approx((35.511, 24.029), abs=0.01)
+        assert planner.geocode_place("Nowhere-at-all-ville") is None
 
 
 def test_pro_plan_gets_more(app, make_user, live):

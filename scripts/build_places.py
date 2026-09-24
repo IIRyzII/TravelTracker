@@ -1,6 +1,11 @@
-"""Rebuild ORBIT's place data from GeoNames, with regions and other-language names.
+"""Refresh the place list that ships with ORBIT (towns of 1,000+ people).
 
     python scripts/build_places.py
+
+Optional: the server's own database of every place (orbit/placedb.py) already
+gives search the regions and other-language names. This refreshes the bundled
+list the globe draws its city and town labels from, and the search the app
+falls back on before that database is built.
 
 Downloads cities1000.zip and admin1CodesASCII.txt from download.geonames.org
 (free, CC BY 4.0 — already credited in the app), then writes:
@@ -20,7 +25,6 @@ import io
 import json
 import os
 import sys
-import unicodedata
 import urllib.request
 import zipfile
 
@@ -28,14 +32,11 @@ ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.insert(0, ROOT)
 sys.path.insert(0, os.path.join(ROOT, "scripts"))
 
-from orbit.places import fold  # noqa: E402
+from orbit.placedb import BIG, iter_places, read_regions  # noqa: E402
 import split_cities  # noqa: E402
 
 DUMP = "https://download.geonames.org/export/dump/"
 SOURCE = os.path.join(ROOT, "data", "geonames-cities.json")
-MIN_POPULATION = 1000
-SKIP_FEATURES = {"PPLH", "PPLQ", "PPLW", "PPLCH"}  # historical, abandoned, destroyed places
-MAX_OTHER_NAMES = 12
 
 
 def download(name):
@@ -45,52 +46,11 @@ def download(name):
         return r.read()
 
 
-def is_latin(text):
-    """Letters are all Latin-script (so readable to ORBIT's users and searchable)."""
-    letters = [c for c in text if c.isalpha()]
-    return bool(letters) and all(unicodedata.name(c, "").startswith("LATIN") for c in letters)
-
-
-def other_names(main, utf8_name, alternates):
-    """Useful extra search terms: the accented name plus Latin-script alternates,
-    minus codes (NYC, ZRH), links and anything that folds to a name we have."""
-    seen = {fold(main)}
-    out = []
-    for alt in [utf8_name, *alternates.split(",")]:
-        alt = alt.strip()
-        if not alt or len(alt) > 60 or "http" in alt or any(ch.isdigit() for ch in alt):
-            continue
-        if alt.isupper() and len(alt) <= 4:  # airport / abbreviation codes
-            continue
-        if not is_latin(alt):
-            continue
-        key = fold(alt)
-        if key and key not in seen:
-            seen.add(key)
-            out.append(alt)
-        if len(out) >= MAX_OTHER_NAMES:
-            break
-    return out
-
-
 def parse_rows(city_lines, admin1_lines):
-    """GeoNames text lines -> ORBIT rows, biggest places first."""
-    regions = {}
-    for line in admin1_lines:
-        parts = line.rstrip("\n").split("\t")
-        if len(parts) >= 3:
-            regions[parts[0]] = parts[2] or parts[1]  # ASCII name, like the place names
-    rows = []
-    for line in city_lines:
-        f = line.rstrip("\n").split("\t")
-        if len(f) < 15 or f[7] in SKIP_FEATURES:
-            continue
-        population = int(f[14] or 0)
-        if population < MIN_POPULATION:
-            continue
-        ascii_name = f[2] or f[1]
-        rows.append([ascii_name, f[8], round(float(f[4]), 3), round(float(f[5]), 3), population,
-                     regions.get(f"{f[8]}.{f[10]}"), other_names(ascii_name, f[1], f[3])])
+    """GeoNames text lines -> ORBIT rows (towns of 1,000+), biggest places first."""
+    rows = [[name, iso2, round(lat, 3), round(lng, 3), pop, region, others]
+            for _, name, iso2, lat, lng, pop, region, others
+            in iter_places(city_lines, read_regions(admin1_lines), min_population=BIG)]
     rows.sort(key=lambda r: -r[4])
     return rows
 

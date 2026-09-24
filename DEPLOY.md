@@ -15,8 +15,9 @@ disk**. The repo includes a `Dockerfile` that runs on any container host, and a
 
 1. Create a Render account and connect your GitHub.
 2. **New → Blueprint** → choose this repository. Render reads `render.yaml` and
-   creates a web service called `orbit` with a 1 GB disk at `/data`
-   (Starter instance — disks need a paid instance).
+   creates a web service called `orbit` with a 5 GB disk at `/data`
+   (Starter instance, since disks need a paid instance). The disk holds the
+   databases, including the every-place one (see below).
 3. When it asks for environment variables, set `APP_URL` to the address Render
    gives the service (e.g. `https://orbit-abcd.onrender.com`). Leave the
    optional ones blank for now. `SECRET_KEY` is generated for you.
@@ -100,20 +101,28 @@ never deleted, because ORBIT won't delete an account without warning its owner f
 
 Locally, with no key, the reset link is printed in the server log instead.
 
-## Improving city search (run once)
+## Every place on Earth (automatic)
 
-City search runs on ORBIT's own copy of GeoNames' place list, with no outside
-service. The copy in the repo only has English spellings, so "München",
-"Firenze" or "Lisboa" find nothing, and three "Portland"s look identical. One
-command rebuilds it with other-language names and regions (Oregon, Maine),
-downloading GeoNames' free data (about 30 MB):
+City search and the globe's Town zoom use a database of every populated place
+in GeoNames' free list: about 4–5 million towns, villages and hamlets. It
+lives on the server's disk as `places.db` (about 0.5 GB), next to ORBIT's main
+database.
 
-```
-python scripts/build_places.py
-```
+- **On Render it builds itself.** On first start the server downloads
+  GeoNames' full list (about 400 MB) and builds the database in the background.
+  That takes roughly 10–30 minutes on a small instance. Until it's ready,
+  search uses the list that ships with the app (towns of 1,000+ people), and
+  the globe shows no villages. It only happens once, because the database
+  stays on the disk.
+- **To refresh it** (GeoNames updates daily, but once a year is plenty), delete
+  `/data/places.db` in Render's Shell and restart, or run
+  `flask --app wsgi build-places` there.
+- **Locally** it's optional: `flask --app wsgi build-places` builds it next to
+  `traveltracker.db`.
 
-Then commit `data/geonames-cities.json` and `static/data/cities-*.json`. The
-app notices the new files by itself.
+`scripts/build_places.py` is separate and also optional. It refreshes the
+smaller list that ships with the app (towns of 1,000+, used for the globe's
+city and town labels). Commit its output if you run it.
 
 ## Settings reference
 
@@ -129,6 +138,8 @@ app notices the new files by itself.
 | `PLACES_FREE_DAILY` / `PLACES_PRO_DAILY` | optional | Live shortlists per user per day (default 3 / 40) |
 | `PLACES_GLOBAL_DAILY_CAP` | optional | Site-wide live shortlists per day (default 300) |
 | `TRUST_PROXY` | optional | Trust one proxy's `X-Forwarded-*` headers (on by default in production) |
+| `PLACES_DB_PATH` | optional | Where the every-place database lives (default: next to `DATABASE_PATH`) |
+| `PLACES_AUTO_BUILD` | optional | Build that database on first start (on by default in production) |
 | `ACCOUNT_INACTIVE_DAYS` | optional | Delete accounts unused for this many days (default 90, `0` = never). A warning email goes out a week before |
 | `RATELIMIT_ENABLED` | optional | Set `0` only for local testing |
 
@@ -166,7 +177,7 @@ deployment starts with an empty database.
 
 | Script | When |
 |---|---|
-| `scripts/build_places.py` | once, to add other-language names and regions to city search (see "Improving city search" below) |
+| `scripts/build_places.py` | optional: refresh the bundled list of towns (see "Every place on Earth") |
 | `scripts/split_cities.py` | after editing `data/geonames-cities.json` by hand (`build_places.py` runs it for you) |
 | `scripts/make_icons.py` | after changing the logo |
 | `scripts/make_og_image.py URL` | to refresh the link-preview image |

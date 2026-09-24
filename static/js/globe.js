@@ -213,7 +213,24 @@ function loadCityTier(tier) {
 function prefetchTowns() {
   const conn = navigator.connection;
   if (conn && (conn.saveData || /2g/.test(conn.effectiveType || ""))) return;
-  setTimeout(() => loadCityTier(2), 4000);
+  loadCityTier(2);
+}
+
+/* villages (under 1,000 people) come from the server a view at a time, once
+   its places database is built — too many to ship to the phone */
+let villageKey = null;
+function loadVillages(lat, lng, radius) {
+  const step = radius / 8; // re-ask only after panning a fair way
+  const key = `${Math.round(lat / step)},${Math.round(lng / step)},${radius.toFixed(1)}`;
+  if (key === villageKey) return;
+  villageKey = key;
+  api(`/api/places/near?lat=${lat.toFixed(3)}&lng=${lng.toFixed(3)}&radius=${radius.toFixed(2)}`)
+    .then((list) => {
+      if (key !== villageKey) return; // the view moved on
+      S.villages = list;
+      updateLOD();
+    })
+    .catch(() => { villageKey = null; });
 }
 
 const CELL = 5; // degrees
@@ -279,10 +296,14 @@ function placeMarkers() {
   // view centre, so key cities surface but edge-of-screen giants can't starve
   // the local towns you're actually looking at
   const cand = [];
-  for (const c of nearbyPlaces(pov.lat, pov.lng, radius, cosLat)) {
+  const consider = (c) => {
     const d = dist(c.lat, c.lng, pov.lat, pov.lng);
-    if (d > radius) continue;
-    cand.push([Math.log10(c.pop + 1) - 2.2 * (d / radius), c]);
+    if (d <= radius) cand.push([Math.log10(c.pop + 1) - 2.2 * (d / radius), c]);
+  };
+  for (const c of nearbyPlaces(pov.lat, pov.lng, radius, cosLat)) consider(c);
+  if (town && S.config.villages) {
+    loadVillages(pov.lat, pov.lng, radius);
+    for (const c of S.villages || []) consider(c);
   }
   cand.sort((a, b) => b[0] - a[0]);
   const out = [];
@@ -327,7 +348,11 @@ export function updateLOD() {
   let labels = [];
   if (mode === "continent") labels = continentLabels();
   else if (mode === "city" || mode === "town") labels = placeMarkers();
-  if (S.searchMarker && mode !== "continent") labels = labels.concat(S.searchMarker);
+  if (S.searchMarker && mode !== "continent") {
+    // scale with zoom like the other labels, just a little bigger
+    const alt = Math.max(world.pointOfView().altitude, 0.05);
+    labels = labels.concat({ ...S.searchMarker, size: alt * 0.95, dot: alt * 0.4 });
+  }
   world.labelsData(labels);
 }
 

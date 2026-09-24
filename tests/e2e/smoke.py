@@ -113,6 +113,15 @@ def run(name, opts, browser, failures):
     time.sleep(2)
     shot("4-cities")
 
+    # Town zoom: small towns load, and villages come from the server if its
+    # places database has been built
+    page.click('#lodPill button[data-mode="town"]')
+    wait_until(page, "performance.getEntriesByType('resource').some(r => r.name.includes('cities-2.json'))", 30)
+    if page.evaluate("fetch('/api/config').then(r => r.json()).then(c => c.villages)"):
+        wait_until(page, "performance.getEntriesByType('resource').some(r => r.name.includes('/api/places/near'))")
+    time.sleep(2)
+    shot("4-towns")
+
     for view in ("logbook", "wishlist", "friends", "trips"):
         tab(view)
         check_overflow(view)

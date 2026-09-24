@@ -1,5 +1,9 @@
-# local databases
+# local databases (places.db is built from GeoNames: flask --app wsgi build-places)
 traveltracker.db
+places.db
+*.building
+allCountries.zip*
+admin1CodesASCII.txt*
 *.db-wal
 *.db-shm
 Visited_Places.DB

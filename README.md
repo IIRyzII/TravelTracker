@@ -23,10 +23,11 @@ To put it online, see **[DEPLOY.md](DEPLOY.md)**.
   email, change password (signs out other devices), download all your data,
   delete your account.
 - **Globe home screen** — dark, high-contrast 3D globe. Visited countries in
-  blue, wishlist in amber. Tap any country to log it; search (countries, cities
-  and towns, instant, on ORBIT's own data) flies you there.
-- **Drill-down zoom** — continents → countries → cities → towns (137,000+ places
-  down to 1,000-person villages, bundled locally and loaded in stages).
+  blue, wishlist in amber. Tap any country to log it; search (any country, city,
+  town or village, instantly, on ORBIT's own data) flies you there.
+- **Drill-down zoom** — continents → countries → cities → towns → villages.
+  137,000 towns of 1,000+ people ship with the app; every other village and
+  hamlet (4–5 million, from GeoNames) comes from the server as you zoom in.
 - **Logbook** — continents → countries → cities & towns, with counts. Logging
   a city automatically marks its country visited.
 - **Friends** — share an invite link or a 6-character code, then *Compare on
@@ -43,7 +44,7 @@ To put it online, see **[DEPLOY.md](DEPLOY.md)**.
 
 | Piece | What it is |
 |---|---|
-| `orbit/` | Flask app: `auth` (sessions, email/Google sign-in, resets), `account`, `travel`, `social`, `trips`, `planner`, `pages`, `plans` (free/pro limits), `db` (SQLite + migrations) |
+| `orbit/` | Flask app: `auth` (sessions, email/Google sign-in, resets), `account`, `travel`, `social`, `trips`, `planner`, `pages`, `plans` (free/pro limits), `db` (SQLite + migrations), `places` / `placedb` (city search and the every-place database) |
 | `app.py` / `wsgi.py` | local dev entry / production entry (`gunicorn wsgi:app`) |
 | `static/js/` | ES modules, no build step: `main.js` boots, `globe.js` draws, `views/*` render each tab, `sw.js` is the service worker |
 | `static/css/app.css` | all styling — desktop first, phone layout under `max-width: 720px` |

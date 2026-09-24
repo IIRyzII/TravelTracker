@@ -79,4 +79,5 @@ def public_config():
     return jsonify(google_client_id=cfg["GOOGLE_CLIENT_ID"],
                    live_places=bool(cfg["GOOGLE_MAPS_API_KEY"]),
                    data_version=cfg["DATA_VERSION"],
+                   villages=os.path.exists(cfg["PLACES_DB_PATH"]),
                    signed_in=current_user() is not None)

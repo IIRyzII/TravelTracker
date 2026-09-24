@@ -37,12 +37,17 @@ def load_config():
         if production:
             raise RuntimeError("SECRET_KEY must be set when ORBIT_ENV=production")
         secret = "dev-only-not-a-secret"
+    database_path = os.environ.get("DATABASE_PATH") or os.path.join(BASE_DIR, "traveltracker.db")
     return {
         "ORBIT_ENV": env,
         "PRODUCTION": production,
         "SECRET_KEY": secret,
-        "DATABASE_PATH": os.environ.get("DATABASE_PATH")
-        or os.path.join(BASE_DIR, "traveltracker.db"),
+        "DATABASE_PATH": database_path,
+        # every populated place (orbit/placedb.py): built next to the main database,
+        # automatically on first start in production (downloads ~400 MB once)
+        "PLACES_DB_PATH": os.environ.get("PLACES_DB_PATH")
+        or os.path.join(os.path.dirname(os.path.abspath(database_path)), "places.db"),
+        "PLACES_AUTO_BUILD": os.environ.get("PLACES_AUTO_BUILD", "1" if production else "0") == "1",
         "APP_URL": (os.environ.get("APP_URL") or "http://127.0.0.1:5000").rstrip("/"),
         # trust X-Forwarded-* from one proxy hop (Render, Fly, Railway...)
         "TRUST_PROXY": os.environ.get("TRUST_PROXY", "1" if production else "0") == "1",

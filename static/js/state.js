@@ -10,6 +10,7 @@ export const S = {
   hover: null,
   hoverContinent: null,
   mode: "continent",   // continent | country | city | town (zoom level)
+  villages: null,       // small places around the current Town-zoom view (server)
   cityGrid: null,      // lazily-loaded GeoNames places in 5° cells, so a zoomed-in
                        // view only scans the places near it
   searchMarker: null,

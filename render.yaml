@@ -9,8 +9,8 @@ services:
     autoDeploy: true
     disk:
       name: orbit-data
-      mountPath: /data       # the SQLite database lives here (DATABASE_PATH)
-      sizeGB: 1
+      mountPath: /data       # the SQLite databases live here (DATABASE_PATH, places.db)
+      sizeGB: 5              # places.db ~0.5 GB, plus room for the ~400 MB download and rebuilds
     envVars:
       - key: ORBIT_ENV
         value: production

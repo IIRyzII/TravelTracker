@@ -8,7 +8,7 @@ import urllib.request
 
 from flask import Blueprint, current_app, jsonify, request
 
-from . import places
+from . import placedb
 from .auth import login_required
 from .db import get_db
 from .geo import ACTIVITIES, _norm, find_country
@@ -50,7 +50,7 @@ def maps_search_url(query, place_id=None):
 def geocode_place(place):
     """Rough centre of a free-text place like 'Chania, Greece', from ORBIT's own
     place data — no outside service."""
-    match = places.index().find(place)
+    match = placedb.searcher().find(place)
     return (match["lat"], match["lng"]) if match else None
 
 
@@ -217,10 +217,26 @@ def itinerary(user):
 @bp.get("/api/cities")
 @limiter.limit("120/minute")
 def cities():
-    """City and town search over ORBIT's own place data (orbit/places.py)."""
+    """City, town and village search over ORBIT's own place data."""
     q = (request.args.get("q") or "").strip()[:60]
     return jsonify([{k: r[k] for k in ("name", "country", "iso2", "admin", "lat", "lng", "pop")}
-                    for r in places.index().search(q)])
+                    for r in placedb.searcher().search(q)])
+
+
+@bp.get("/api/places/near")
+@login_required
+@limiter.limit("120/minute", key_func=user_or_ip)
+def villages_near(user):
+    """Villages around a point for the globe's Town zoom (once the places
+    database is built; towns of 1,000+ ship with the app)."""
+    db = placedb.database()
+    try:
+        lat = max(-90.0, min(float(request.args["lat"]), 90.0))
+        lng = (float(request.args["lng"]) + 180) % 360 - 180
+        radius = max(0.2, min(float(request.args.get("radius", 5)), 15.0))
+    except (KeyError, ValueError):
+        return jsonify(error="lat, lng and radius are needed."), 400
+    return jsonify(db.villages_near(lat, lng, radius) if db else [])
 
 
 @bp.get("/api/destinations")
