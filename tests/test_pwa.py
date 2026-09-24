@@ -18,6 +18,9 @@ def test_service_worker_precaches_every_module(client):
         for name in files if name.endswith(".js") and name != "sw.js"
     }
     assert modules - listed == set(), "add new modules to SHELL in static/js/sw.js"
+    # every precached URL must exist, or the service worker fails to install
+    for path in re.findall(r'^\s+"(/[^"]*)",$', sw.get_data(as_text=True), re.M):
+        assert client.get(path).status_code == 200, path
 
 
 def test_manifest_and_icons(client):

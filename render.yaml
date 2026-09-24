@@ -1,0 +1,28 @@
+# Render Blueprint — New > Blueprint > pick this repo. See DEPLOY.md.
+services:
+  - type: web
+    name: orbit
+    runtime: docker
+    plan: starter            # persistent disks need a paid instance
+    region: frankfurt        # closest to UK/EU users; change if your users are elsewhere
+    healthCheckPath: /healthz
+    autoDeploy: true
+    disk:
+      name: orbit-data
+      mountPath: /data       # the SQLite database lives here (DATABASE_PATH)
+      sizeGB: 1
+    envVars:
+      - key: ORBIT_ENV
+        value: production
+      - key: SECRET_KEY
+        generateValue: true  # signs session cookies and reset links — never share it
+      - key: APP_URL
+        sync: false          # e.g. https://orbit-abcd.onrender.com, later your own domain
+      - key: GOOGLE_CLIENT_ID
+        sync: false          # optional: enables "Continue with Google"
+      - key: GOOGLE_MAPS_API_KEY
+        sync: false          # optional: live planner results
+      - key: RESEND_API_KEY
+        sync: false          # needed for password-reset emails
+      - key: MAIL_FROM
+        sync: false          # e.g. ORBIT <noreply@yourdomain.com>

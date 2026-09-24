@@ -82,3 +82,11 @@ def test_small_public_files(client):
     assert "Sitemap:" in client.get("/robots.txt").get_data(as_text=True)
     assert "<urlset" in client.get("/sitemap.xml").get_data(as_text=True)
     assert client.get("/healthz").json == {"ok": True}
+
+
+def test_friend_codes_cant_be_brute_forced(tmp_path):
+    app = create_app({"DATABASE_PATH": str(tmp_path / "rl2.db"), "RATELIMIT_ENABLED": True})
+    c = app.test_client()
+    c.post("/api/auth/signup", json={"email": "g@example.com", "password": "longenough", "username": "G"})
+    codes = [c.post("/api/friends", json={"share_code": f"AAAA{i:02d}"}).status_code for i in range(21)]
+    assert codes[:20] == [404] * 20 and codes[20] == 429

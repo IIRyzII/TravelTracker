@@ -1,0 +1,17 @@
+.git
+.github
+.venv
+__pycache__
+*.pyc
+.pytest_cache
+*.db
+*.db-wal
+*.db-shm
+Visited_Places.DB
+config.json
+.env
+tests
+screenshots
+data/geonames-cities.json
+static/**/*.gz
+static/**/*.br

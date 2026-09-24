@@ -1,9 +1,9 @@
 # ORBIT — TravelTracker
 
 A globe-first travel tracker. Show off every country you've set foot in on a big
-interactive 3D globe, keep a wishlist of dream places, add friends with a share
-code and overlay their map on yours, and turn any dream destination into a
-shortlist of sights, activities, food and nights out.
+interactive 3D globe, keep a wishlist of dream places, add friends and overlay
+their map on yours, and turn any dream destination into a shortlist of sights,
+activities, food and nights out. Works on phones and installs to the home screen.
 
 ![stack](https://img.shields.io/badge/stack-Flask%20%2B%20SQLite%20%2B%20globe.gl-3987e5)
 
@@ -14,66 +14,55 @@ pip install -r requirements.txt
 python app.py
 ```
 
-then open **http://127.0.0.1:5000** — or just double-click `run.bat`.
+then open **http://127.0.0.1:5000** — or just double-click `run.bat` on Windows.
+To put it online, see **[DEPLOY.md](DEPLOY.md)**.
 
 ## Features
 
+- **Accounts** — email + password or "Continue with Google". Password reset by
+  email, change password (signs out other devices), download all your data,
+  delete your account.
 - **Globe home screen** — dark, high-contrast 3D globe. Visited countries in
-  blue, wishlist in amber. Click any country to log it; search box flies you there.
-- **Drill-down zoom** — starts at continent level (click a continent to dive in),
-  zoom for countries, keep zooming for cities, then towns (137,000+ places
-  down to 1,000-person villages, bundled locally — browsing never costs an
-  API call). A pill in the corner
-  jumps between levels. Click any town to log it, dream-list it or plan a trip;
-  visited towns glow blue on the globe, wishlisted ones amber.
-- **Logbook** — your travels in depth: continents → countries → cities & towns,
-  with counts per continent. Click anything to fly there; logging a city
-  automatically marks its country visited.
-- **Stats rail** — countries visited, % of the world, continents, dream-list count.
-- **Friends** — every profile gets a 6-character share code. Add a friend's code
-  and hit *Compare on globe*: only-you / both / only-them in three colours.
-- **Wishlist** — free-text dream places ("Crete, Greece") that auto-match to
-  countries on the globe.
-- **Trip planner** — live top-rated places from Google Maps (see below), or 22
-  hand-curated destination shortlists when no API key is set. Every item links
-  straight to its Google Maps page so you can check it's real. Tick the picks
-  you want, then save the shortlist as a planned trip.
-- **My trips** — saved shortlists with progress tracking: check things off as
-  you do them, drop the duds, follow the Maps links on the ground. Add your
-  flight number and dates for airline context and closed-while-you're-there flags.
-- **Plan with friends** — hit *Plan together* on a friend, save the trip, and
-  it lands in both of your trip lists: shared check-offs, ♥ voting to pick the
-  group's favourites, and a crew row to invite more people.
-- **City search** — the globe search box also finds cities (free geocoder, no
-  key needed) and flies you to them.
-
-## Live results from Google Maps (optional)
-
-Out of the box the planner uses the bundled curated lists. To get **live,
-top-rated, filterable results** (rating + review counts, ranked best-first):
-
-1. Get a key from [Google Cloud Console](https://console.cloud.google.com/) —
-   create a project, enable the **Places API (New)**, create an API key.
-   Google's free tier comfortably covers personal use.
-2. Copy `config.example.json` to `config.json` and paste your key in
-   (or set the `GOOGLE_MAPS_API_KEY` environment variable).
-3. Restart the app. The planner badge switches from "Curated" to
-   "Live · Google Maps". If the key ever fails, it falls back to the curated
-   lists automatically.
-
-`config.json` is gitignored so your key never gets committed.
+  blue, wishlist in amber. Tap any country to log it; search flies you there.
+- **Drill-down zoom** — continents → countries → cities → towns (137,000+ places
+  down to 1,000-person villages, bundled locally and loaded in stages).
+- **Logbook** — continents → countries → cities & towns, with counts. Logging
+  a city automatically marks its country visited.
+- **Friends** — share an invite link or a 6-character code, then *Compare on
+  globe*: only-you / both / only-them in three colours.
+- **Trip planner** — live top-rated places from Google Maps (a daily allowance
+  per user), or 23 hand-curated destination shortlists. Tick your picks and save
+  them as a trip.
+- **My trips** — check things off, add flight and dates (places closed while
+  you're there get flagged), plan with friends with shared check-offs and ♥ votes.
+- **Phone-first** — bottom tab bar, bottom sheets, touch-sized controls,
+  installable app (PWA) that opens offline.
 
 ## How it's put together
 
 | Piece | What it is |
 |---|---|
-| `app.py` | Flask backend + SQLite (`traveltracker.db`), all JSON API |
+| `orbit/` | Flask app: `auth` (sessions, email/Google sign-in, resets), `account`, `travel`, `social`, `trips`, `planner`, `pages`, `plans` (free/pro limits), `db` (SQLite + migrations) |
+| `app.py` / `wsgi.py` | local dev entry / production entry (`gunicorn wsgi:app`) |
+| `static/js/` | ES modules, no build step: `main.js` boots, `globe.js` draws, `views/*` render each tab, `sw.js` is the service worker |
+| `static/css/app.css` | all styling — desktop first, phone layout under `max-width: 720px` |
+| `static/data/` | Natural Earth country borders; GeoNames places split into `cities-1.json` (≥15k people) and `cities-2.json` (smaller towns) |
 | `data/activities.json` | curated destination shortlists for the planner |
-| `static/js/app.js` | globe (globe.gl), views, all UI logic — no build step |
-| `static/data/countries.geojson` | Natural Earth 110m country polygons (bundled, works offline) |
-| `static/data/cities.json` | 137k cities, towns & villages (pop ≥ 1,000) from [GeoNames](https://www.geonames.org/) (CC BY 4.0), lazy-loaded when you zoom in |
-| `Visited_Places.DB` | the original CLI's database — imported automatically into the first profile created |
+| `data/geonames-cities.json` | source for the city files (`scripts/split_cities.py`) |
+| `tests/` | pytest suite + `e2e/smoke.py` real-browser check at phone and desktop sizes |
+| `Dockerfile`, `render.yaml` | production image and one-click Render setup |
 
-Profiles are name-only (no passwords) — it's a self-hosted app for you and your
-friends. Everyone who opens the site creates a profile, and friendships are
-mutual via share codes.
+Place data © [GeoNames](https://www.geonames.org/) (CC BY 4.0), borders ©
+[Natural Earth](https://www.naturalearthdata.com/), globe by
+[globe.gl](https://github.com/vasturiano/globe.gl), city search by
+[Open-Meteo](https://open-meteo.com/).
+
+## What's next
+
+- **ORBIT Pro** — Stripe subscription. Plans already exist in the database
+  (`users.plan`) and `orbit/plans.py` decides what each plan gets (e.g. more
+  live Google Maps shortlists).
+- **Travel map poster** — a print-ready map of your visited countries, sold as a
+  download first, then printed on demand.
+- **App stores** — wrap the installable app for Google Play (Trusted Web
+  Activity) and the App Store (Capacitor).

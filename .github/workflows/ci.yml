@@ -1,0 +1,41 @@
+name: CI
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  tests:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+      - run: pip install -r requirements.txt pytest
+      - run: pytest -q
+
+  browser:
+    # real Chromium at phone and desktop sizes: layout overflow, console
+    # errors, CSP violations, service worker
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+      - run: pip install -r requirements-dev.txt
+      - run: python -m playwright install --with-deps chromium
+      - name: Start ORBIT
+        run: |
+          RATELIMIT_ENABLED=0 DATABASE_PATH=/tmp/e2e.db \
+            gunicorn wsgi:app --workers 1 --threads 8 -b 127.0.0.1:5055 --daemon
+          timeout 30 sh -c 'until curl -sf http://127.0.0.1:5055/healthz; do sleep 1; done'
+      - run: python tests/e2e/smoke.py http://127.0.0.1:5055 screenshots
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: screenshots
+          path: screenshots/
